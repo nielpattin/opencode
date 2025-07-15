@@ -1,10 +1,12 @@
+import { Session } from "../../../session"
 import { Snapshot } from "../../../snapshot"
 import { bootstrap } from "../../bootstrap"
 import { cmd } from "../cmd"
 
 export const SnapshotCommand = cmd({
   command: "snapshot",
-  builder: (yargs) => yargs.command(CreateCommand).command(RestoreCommand).command(DiffCommand).demandCommand(),
+  builder: (yargs) =>
+    yargs.command(CreateCommand).command(RestoreCommand).command(DiffCommand).command(RevertCommand).demandCommand(),
   async handler() {},
 })
 
@@ -47,6 +49,32 @@ export const DiffCommand = cmd({
     await bootstrap({ cwd: process.cwd() }, async () => {
       const diff = await Snapshot.diff("test", args.commit)
       console.log(diff)
+    })
+  },
+})
+
+export const RevertCommand = cmd({
+  command: "revert <sessionID> <messageID>",
+  describe: "revert",
+  builder: (yargs) =>
+    yargs
+      .positional("sessionID", {
+        type: "string",
+        description: "sessionID",
+        demandOption: true,
+      })
+      .positional("messageID", {
+        type: "string",
+        description: "messageID",
+        demandOption: true,
+      }),
+  async handler(args) {
+    await bootstrap({ cwd: process.cwd() }, async () => {
+      const session = await Session.revert({
+        sessionID: args.sessionID,
+        messageID: args.messageID,
+      })
+      console.log(session?.revert)
     })
   },
 })
