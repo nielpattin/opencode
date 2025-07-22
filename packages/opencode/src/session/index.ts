@@ -972,7 +972,14 @@ export namespace Session {
     }
   }
 
-  export async function revert(input: { sessionID: string; messageID: string; partID?: string }) {
+  export const RevertInput = z.object({
+    sessionID: Identifier.schema("session"),
+    messageID: Identifier.schema("message"),
+    partID: Identifier.schema("part").optional(),
+  })
+  export type RevertInput = z.infer<typeof RevertInput>
+
+  export async function revert(input: RevertInput) {
     const all = await messages(input.sessionID)
     let lastUser: MessageV2.User | undefined
     let lastSnapshot: MessageV2.SnapshotPart | undefined

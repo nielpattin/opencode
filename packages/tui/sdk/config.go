@@ -57,8 +57,6 @@ type Config struct {
 	Keybinds KeybindsConfig `json:"keybinds"`
 	// @deprecated Always uses stretch layout.
 	Layout ConfigLayout `json:"layout"`
-	// Minimum log level to write to log files
-	LogLevel LogLevel `json:"log_level"`
 	// MCP (Model Context Protocol) server configurations
 	Mcp map[string]ConfigMcp `json:"mcp"`
 	// Modes configuration, see https://opencode.ai/docs/modes
@@ -90,7 +88,6 @@ type configJSON struct {
 	Instructions      apijson.Field
 	Keybinds          apijson.Field
 	Layout            apijson.Field
-	LogLevel          apijson.Field
 	Mcp               apijson.Field
 	Mode              apijson.Field
 	Model             apijson.Field
@@ -513,8 +510,12 @@ type KeybindsConfig struct {
 	MessagesPageUp string `json:"messages_page_up,required"`
 	// Navigate to previous message
 	MessagesPrevious string `json:"messages_previous,required"`
-	// Revert message
+	// Redo message
+	MessagesRedo string `json:"messages_redo,required"`
+	// @deprecated use messages_undo. Revert message
 	MessagesRevert string `json:"messages_revert,required"`
+	// Undo message
+	MessagesUndo string `json:"messages_undo,required"`
 	// List available models
 	ModelList string `json:"model_list,required"`
 	// Create/update AGENTS.md
@@ -568,7 +569,9 @@ type keybindsConfigJSON struct {
 	MessagesPageDown     apijson.Field
 	MessagesPageUp       apijson.Field
 	MessagesPrevious     apijson.Field
+	MessagesRedo         apijson.Field
 	MessagesRevert       apijson.Field
+	MessagesUndo         apijson.Field
 	ModelList            apijson.Field
 	ProjectInit          apijson.Field
 	SessionCompact       apijson.Field
