@@ -819,7 +819,7 @@ export namespace Session {
             })
             switch (value.type) {
               case "start":
-                const snapshot = await Snapshot.create(assistantMsg.sessionID)
+                const snapshot = await Snapshot.create(assistantMsg.sessionID, true)
                 if (snapshot)
                   await updatePart({
                     id: Identifier.ascending("part"),
