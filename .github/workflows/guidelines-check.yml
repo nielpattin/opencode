@@ -35,7 +35,7 @@ jobs:
           ${{ github.event.pull_request.body }}
           </pr-description>
 
-          Please check all the code changes in this pull request against the guidelines in AGENTS.md file in this repository.
+          Please check all the code changes in this pull request against the guidelines in AGENTS.md file in this repository. Diffs are important but make sure you read the entire file to get proper context.
 
           For each violation you find, create a file comment using the gh CLI. Use this exact format for each violation:
 
