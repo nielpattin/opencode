@@ -6,6 +6,7 @@ import { LSPServer } from "./server"
 import { z } from "zod"
 import { Config } from "../config/config"
 import { spawn } from "child_process"
+import { SeverityMap } from "./severity"
 
 export namespace LSP {
   const log = Log.create({ service: "lsp" })
@@ -73,18 +74,22 @@ export namespace LSP {
           ...existing,
           root: existing?.root ?? (async (_file, app) => app.path.root),
           extensions: item.extensions ?? existing.extensions,
-          spawn: async (_app, root) => {
-            return {
-              process: spawn(item.command[0], item.command.slice(1), {
-                cwd: root,
-                env: {
-                  ...process.env,
-                  ...item.env,
-                },
-              }),
-              initialization: item.initialization,
-            }
-          },
+          severity: item.severity ? SeverityMap[item.severity] : existing.severity,
+          ...(item.command && {
+            spawn: async (_app, root) => {
+              const command = item.command! // assertion since we checked above
+              return {
+                process: spawn(command[0], command.slice(1), {
+                  cwd: root,
+                  env: {
+                    ...process.env,
+                    ...item.env,
+                  },
+                }),
+                initialization: item.initialization,
+              }
+            },
+          }),
         }
       }
 
@@ -253,15 +258,11 @@ export namespace LSP {
   }
 
   export namespace Diagnostic {
-    export function pretty(diagnostic: LSPClient.Diagnostic) {
-      const severityMap = {
-        1: "ERROR",
-        2: "WARN",
-        3: "INFO",
-        4: "HINT",
-      }
+    export const Severity = SeverityMap
+    export const Severities = Object.keys(Severity).filter((key) => isNaN(Number(key)))
 
-      const severity = severityMap[diagnostic.severity || 1]
+    export function pretty(diagnostic: LSPClient.Diagnostic) {
+      const severity = Severity[diagnostic.severity || 1]
       const line = diagnostic.range.start.line + 1
       const col = diagnostic.range.start.character + 1
 

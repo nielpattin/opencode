@@ -16,6 +16,9 @@ import { Bus } from "../bus"
 import { FileTime } from "../file/time"
 import { Filesystem } from "../util/filesystem"
 import { Agent } from "../agent/agent"
+import { Config } from "../config/config"
+import { Severity, SeverityMap } from "../lsp/severity"
+import { Log } from "../util/log"
 
 export const EditTool = Tool.define("edit", {
   description: DESCRIPTION,
@@ -34,6 +37,7 @@ export const EditTool = Tool.define("edit", {
       throw new Error("oldString and newString must be different")
     }
 
+    const cfg = await Config.get()
     const app = App.info()
     const filePath = path.isAbsolute(params.filePath) ? params.filePath : path.join(app.path.cwd, params.filePath)
     if (!Filesystem.contains(app.path.cwd, filePath)) {
@@ -105,15 +109,28 @@ export const EditTool = Tool.define("edit", {
     let output = ""
     await LSP.touchFile(filePath, true)
     const diagnostics = await LSP.diagnostics()
+    const lsp = cfg.lsp ?? {}
     for (const [file, issues] of Object.entries(diagnostics)) {
+      Log.Default.info("issue_s", {
+        issues: issues.map((issue) => JSON.stringify(issue)),
+        issueLength: issues.length,
+      })
       if (issues.length === 0) continue
       if (file === filePath) {
         output += `\nThis file has errors, please fix\n<file_diagnostics>\n${issues.map(LSP.Diagnostic.pretty).join("\n")}\n</file_diagnostics>\n`
         continue
       }
       output += `\n<project_diagnostics>\n${file}\n${issues
-        // TODO: may want to make more leniant for eslint
-        .filter((item) => item.severity === 1)
+        .filter((item) => {
+          if (!item.source) {
+            return item.severity === Severity.ERROR
+          }
+          const settings = lsp[item.source]
+          if (settings.disabled) return false
+          const minSeverity = settings.severity ? (SeverityMap[settings.severity] ?? Severity.ERROR) : Severity.ERROR
+
+          return item.severity && item.severity >= minSeverity
+        })
         .map(LSP.Diagnostic.pretty)
         .join("\n")}\n</project_diagnostics>\n`
     }

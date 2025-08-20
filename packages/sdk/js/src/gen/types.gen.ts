@@ -701,7 +701,7 @@ export type Config = {
           disabled: true
         }
       | {
-          command: Array<string>
+          command?: Array<string>
           extensions?: Array<string>
           disabled?: boolean
           env?: {
@@ -710,6 +710,10 @@ export type Config = {
           initialization?: {
             [key: string]: unknown
           }
+          /**
+           * Minimum diagnostic severity level to show to agent
+           */
+          severity?: "ERROR" | "WARN" | "INFO" | "HINT"
         }
   }
   /**

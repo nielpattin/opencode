@@ -7,6 +7,7 @@ import { BunProc } from "../bun"
 import { $ } from "bun"
 import fs from "fs/promises"
 import { Filesystem } from "../util/filesystem"
+import { Severity } from "./severity"
 
 export namespace LSPServer {
   const log = Log.create({ service: "lsp.server" })
@@ -34,6 +35,7 @@ export namespace LSPServer {
 
   export interface Info {
     id: string
+    severity?: Severity
     extensions: string[]
     global?: boolean
     root: RootFunction
@@ -128,6 +130,8 @@ export namespace LSPServer {
 
   export const ESLint: Info = {
     id: "eslint",
+    // most ESLint feedback has severity HINT
+    severity: Severity.HINT,
     root: NearestRoot([
       "eslint.config.js",
       "eslint.config.mjs",

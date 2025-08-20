@@ -14,6 +14,7 @@ import matter from "gray-matter"
 import { Flag } from "../flag/flag"
 import { Auth } from "../auth"
 import { type ParseError as JsoncParseError, parse as parseJsonc, printParseErrorCode } from "jsonc-parser"
+import { LSP } from "../lsp"
 
 export namespace Config {
   const log = Log.create({ service: "config" })
@@ -382,11 +383,15 @@ export namespace Config {
               disabled: z.literal(true),
             }),
             z.object({
-              command: z.array(z.string()),
+              command: z.array(z.string()).optional(),
               extensions: z.array(z.string()).optional(),
               disabled: z.boolean().optional(),
               env: z.record(z.string(), z.string()).optional(),
               initialization: z.record(z.string(), z.any()).optional(),
+              severity: z
+                .enum(Object.keys(LSP.Diagnostic.Severity) as [string, ...string[]])
+                .optional()
+                .describe("Minimum diagnostic severity level to show to agent"),
             }),
           ]),
         )

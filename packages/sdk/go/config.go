@@ -79,7 +79,8 @@ type Config struct {
 	SmallModel string `json:"small_model"`
 	Snapshot   bool   `json:"snapshot"`
 	// Theme name to use for the interface
-	Theme string `json:"theme"`
+	Theme string          `json:"theme"`
+	Tools map[string]bool `json:"tools"`
 	// TUI specific settings
 	Tui ConfigTui `json:"tui"`
 	// Custom username to display in conversations instead of system username
@@ -110,6 +111,7 @@ type configJSON struct {
 	SmallModel        apijson.Field
 	Snapshot          apijson.Field
 	Theme             apijson.Field
+	Tools             apijson.Field
 	Tui               apijson.Field
 	Username          apijson.Field
 	raw               string
@@ -803,9 +805,11 @@ type ConfigLsp struct {
 	// This field can have the runtime type of [[]string].
 	Extensions interface{} `json:"extensions"`
 	// This field can have the runtime type of [map[string]interface{}].
-	Initialization interface{}   `json:"initialization"`
-	JSON           configLspJSON `json:"-"`
-	union          ConfigLspUnion
+	Initialization interface{} `json:"initialization"`
+	// Minimum diagnostic severity level to show to agent
+	Severity ConfigLspSeverity `json:"severity"`
+	JSON     configLspJSON     `json:"-"`
+	union    ConfigLspUnion
 }
 
 // configLspJSON contains the JSON metadata for the struct [ConfigLsp]
@@ -815,6 +819,7 @@ type configLspJSON struct {
 	Env            apijson.Field
 	Extensions     apijson.Field
 	Initialization apijson.Field
+	Severity       apijson.Field
 	raw            string
 	ExtraFields    map[string]apijson.Field
 }
@@ -898,12 +903,14 @@ func (r ConfigLspDisabledDisabled) IsKnown() bool {
 }
 
 type ConfigLspObject struct {
-	Command        []string               `json:"command,required"`
+	Command        []string               `json:"command"`
 	Disabled       bool                   `json:"disabled"`
 	Env            map[string]string      `json:"env"`
 	Extensions     []string               `json:"extensions"`
 	Initialization map[string]interface{} `json:"initialization"`
-	JSON           configLspObjectJSON    `json:"-"`
+	// Minimum diagnostic severity level to show to agent
+	Severity ConfigLspObjectSeverity `json:"severity"`
+	JSON     configLspObjectJSON     `json:"-"`
 }
 
 // configLspObjectJSON contains the JSON metadata for the struct [ConfigLspObject]
@@ -913,6 +920,7 @@ type configLspObjectJSON struct {
 	Env            apijson.Field
 	Extensions     apijson.Field
 	Initialization apijson.Field
+	Severity       apijson.Field
 	raw            string
 	ExtraFields    map[string]apijson.Field
 }
@@ -926,6 +934,42 @@ func (r configLspObjectJSON) RawJSON() string {
 }
 
 func (r ConfigLspObject) implementsConfigLsp() {}
+
+// Minimum diagnostic severity level to show to agent
+type ConfigLspObjectSeverity string
+
+const (
+	ConfigLspObjectSeverityError ConfigLspObjectSeverity = "ERROR"
+	ConfigLspObjectSeverityWarn  ConfigLspObjectSeverity = "WARN"
+	ConfigLspObjectSeverityInfo  ConfigLspObjectSeverity = "INFO"
+	ConfigLspObjectSeverityHint  ConfigLspObjectSeverity = "HINT"
+)
+
+func (r ConfigLspObjectSeverity) IsKnown() bool {
+	switch r {
+	case ConfigLspObjectSeverityError, ConfigLspObjectSeverityWarn, ConfigLspObjectSeverityInfo, ConfigLspObjectSeverityHint:
+		return true
+	}
+	return false
+}
+
+// Minimum diagnostic severity level to show to agent
+type ConfigLspSeverity string
+
+const (
+	ConfigLspSeverityError ConfigLspSeverity = "ERROR"
+	ConfigLspSeverityWarn  ConfigLspSeverity = "WARN"
+	ConfigLspSeverityInfo  ConfigLspSeverity = "INFO"
+	ConfigLspSeverityHint  ConfigLspSeverity = "HINT"
+)
+
+func (r ConfigLspSeverity) IsKnown() bool {
+	switch r {
+	case ConfigLspSeverityError, ConfigLspSeverityWarn, ConfigLspSeverityInfo, ConfigLspSeverityHint:
+		return true
+	}
+	return false
+}
 
 type ConfigMcp struct {
 	// Type of MCP server connection
@@ -1760,6 +1804,8 @@ type KeybindsConfig struct {
 	SessionNew string `json:"session_new,required"`
 	// Share current session
 	SessionShare string `json:"session_share,required"`
+	// Show session timeline
+	SessionTimeline string `json:"session_timeline,required"`
 	// Unshare current session
 	SessionUnshare string `json:"session_unshare,required"`
 	// @deprecated use agent_cycle. Next agent
@@ -1821,6 +1867,7 @@ type keybindsConfigJSON struct {
 	SessionList              apijson.Field
 	SessionNew               apijson.Field
 	SessionShare             apijson.Field
+	SessionTimeline          apijson.Field
 	SessionUnshare           apijson.Field
 	SwitchAgent              apijson.Field
 	SwitchAgentReverse       apijson.Field

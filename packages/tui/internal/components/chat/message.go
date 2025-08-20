@@ -564,7 +564,7 @@ func renderToolDetails(
 						Padding(1, 2).
 						Width(width - 4)
 
-					if diagnostics := renderDiagnostics(metadata, filename, backgroundColor, width-6); diagnostics != "" {
+					if diagnostics := renderDiagnostics(app.Config.Lsp, metadata, filename, backgroundColor, width-6); diagnostics != "" {
 						diagnostics = style.Render(diagnostics)
 						body += "\n" + diagnostics
 					}
@@ -605,7 +605,7 @@ func renderToolDetails(
 			if filename, ok := toolInputMap["filePath"].(string); ok {
 				if content, ok := toolInputMap["content"].(string); ok {
 					body = util.RenderFile(filename, content, width)
-					if diagnostics := renderDiagnostics(metadata, filename, backgroundColor, width-4); diagnostics != "" {
+					if diagnostics := renderDiagnostics(app.Config.Lsp, metadata, filename, backgroundColor, width-4); diagnostics != "" {
 						body += "\n\n" + diagnostics
 					}
 				}
@@ -925,12 +925,28 @@ type Diagnostic struct {
 			Character int `json:"character"`
 		} `json:"start"`
 	} `json:"range"`
-	Severity int    `json:"severity"`
-	Message  string `json:"message"`
+	Severity int     `json:"severity"`
+	Message  string  `json:"message"`
+	Source   *string `json:"source,omitempty"`
+}
+
+var severityToLevel = map[int]string{
+	1: "ERROR",
+	2: "WARNING",
+	3: "INFO",
+	4: "HINT",
+}
+
+var levelToSeverity = map[string]int{
+	"ERROR":   1,
+	"WARNING": 2,
+	"INFO":    3,
+	"HINT":    4,
 }
 
 // renderDiagnostics formats LSP diagnostics for display in the TUI
 func renderDiagnostics(
+	lspCfg map[string]opencode.ConfigLsp,
 	metadata map[string]any,
 	filePath string,
 	backgroundColor compat.AdaptiveColor,
@@ -938,7 +954,7 @@ func renderDiagnostics(
 ) string {
 	if diagnosticsData, ok := metadata["diagnostics"].(map[string]any); ok {
 		if fileDiagnostics, ok := diagnosticsData[filePath].([]any); ok {
-			var errorDiagnostics []string
+			var diagnostics []string
 			for _, diagInterface := range fileDiagnostics {
 				diagMap, ok := diagInterface.(map[string]any)
 				if !ok {
@@ -953,23 +969,39 @@ func renderDiagnostics(
 				if err := json.Unmarshal(diagBytes, &diag); err != nil {
 					continue
 				}
-				// Only show error diagnostics (severity === 1)
-				if diag.Severity != 1 {
+
+				// if no LSP level configured then default to error level severity
+				minSev := 1
+				if diag.Source != nil {
+					setting := lspCfg[*diag.Source]
+					if setting.Severity.IsKnown() {
+						minSev = levelToSeverity[string(setting.Severity)]
+					}
+				}
+				if diag.Severity < minSev {
 					continue
 				}
+
+				level, ok := severityToLevel[diag.Severity]
+				if !ok {
+					// default to error
+					level = "ERROR"
+				}
+
 				line := diag.Range.Start.Line + 1        // 1-based
 				column := diag.Range.Start.Character + 1 // 1-based
-				errorDiagnostics = append(
-					errorDiagnostics,
-					fmt.Sprintf("Error [%d:%d] %s", line, column, diag.Message),
+
+				diagnostics = append(
+					diagnostics,
+					fmt.Sprintf("%s [%d:%d] %s", level, line, column, diag.Message),
 				)
 			}
-			if len(errorDiagnostics) == 0 {
+			if len(diagnostics) == 0 {
 				return ""
 			}
 			t := theme.CurrentTheme()
 			var result strings.Builder
-			for _, diagnostic := range errorDiagnostics {
+			for _, diagnostic := range diagnostics {
 				if result.Len() > 0 {
 					result.WriteString("\n\n")
 				}
