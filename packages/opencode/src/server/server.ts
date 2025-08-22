@@ -669,7 +669,7 @@ export namespace Server {
             id: z.string().openapi({ description: "Session ID" }),
           }),
         ),
-        zValidator("json", Session.CommandInput.omit({ sessionID: true })),
+        zValidator("json", Session.ShellInput.omit({ sessionID: true })),
         async (c) => {
           const sessionID = c.req.valid("param").id
           const body = c.req.valid("json")
