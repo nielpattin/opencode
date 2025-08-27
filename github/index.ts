@@ -662,8 +662,8 @@ async function fetchPR() {
   const part =
     mode.type === "review_comment"
       ? `
-      comments(last: 0) { nodes { }}
-      reviews(last: 0) { nodes { }}
+      comments(last: 0) { nodes { id }}
+      reviews(last: 0) { nodes { id }}
       reviewThreads(last: 100) {
         nodes {
           id
