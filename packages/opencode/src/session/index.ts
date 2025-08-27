@@ -1049,7 +1049,7 @@ export namespace Session {
       id: Identifier.ascending("part"),
       messageID: userMsg.id,
       sessionID: input.sessionID,
-      text: `Please execute the following command:\n${input.command}`,
+      text: "The following tool was executed by the user",
       synthetic: true,
     }
     await updatePart(userPart)
