@@ -53,10 +53,6 @@ export namespace Opencode {
     console.log("Sending message to opencode...")
     const { providerID, modelID } = state()
 
-    // restore git credentials temporarily to avoid prompt injection
-    const isGitConfigured = await Git.isConfigured()
-    if (isGitConfigured) await Git.restore()
-
     const session = await client()
       .session.create<true>()
       .then((r) => r.data)
@@ -74,8 +70,6 @@ export namespace Opencode {
         ],
       },
     })
-
-    if (isGitConfigured) await Git.configure()
 
     // @ts-ignore
     const match = chat.data.parts.findLast((p) => p.type === "text")

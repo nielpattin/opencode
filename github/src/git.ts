@@ -34,10 +34,6 @@ export namespace Git {
     await $`git config --local ${CONFIG_KEY} "${extraHeaderValue}"`
   }
 
-  export async function isConfigured() {
-    return Boolean(extraHeaderValue)
-  }
-
   export function isForkedPr() {
     const pr = Context.payloadPullRequest()
     return pr.head.repo?.full_name !== pr.base.repo.full_name

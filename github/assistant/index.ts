@@ -51,11 +51,9 @@ try {
   if (mode.isPR()) {
     const prData = await fetchPR()
     const dataPrompt = buildPromptDataForPR(prData)
-    console.log("!!!@#!@ dataPrompt", dataPrompt)
     // Local PR
     if (prData.headRepository.nameWithOwner === prData.baseRepository.nameWithOwner) {
       await checkoutLocalBranch(prData)
-      // TODO
       const response = await chat(`${userPrompt}\n\n${dataPrompt}`, promptFiles)
       if (await branchIsDirty()) {
         const summary = await summarize(response)
