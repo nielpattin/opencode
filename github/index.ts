@@ -809,7 +809,7 @@ function buildPromptDataForPR(pr: GitHubPullRequest) {
       ]
     })(),
     ...(() => {
-      const reviews = pr.reviews.nodes ?? []
+      const reviews = pr.reviews?.nodes ?? []
       if (reviews.length === 0) return []
       return [
         "<pull_request_reviews>",
