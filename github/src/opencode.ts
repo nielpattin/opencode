@@ -1,5 +1,4 @@
 import { spawn } from "node:child_process"
-import { lazy } from "./lazy"
 import { createOpencodeClient } from "@opencode-ai/sdk"
 import { Auth } from "./auth"
 
@@ -8,57 +7,55 @@ export namespace Opencode {
   const PORT = 4096
   const SERVER_URL = `http://${HOST}:${PORT}`
 
-  export const state = lazy(() => {
-    const proc = spawn(`opencode`, [`serve`, `--hostname=${HOST}`, `--port=${PORT}`])
-    const client = createOpencodeClient({ baseUrl: SERVER_URL })
-
-    // parse models
-    const value = process.env["MODEL"]
-    if (!value) throw new Error(`Environment variable "MODEL" is not set`)
-
-    const [providerID, ...rest] = value.split("/")
-    const modelID = rest.join("/")
-
-    if (!providerID?.length || !modelID.length)
-      throw new Error(`Invalid model ${value}. Model must be in the format "provider/model".`)
-
-    return {
-      url: SERVER_URL,
-      server: proc,
-      client,
-      providerID,
-      modelID,
-    }
-  })
+  let state: {
+    url: string
+    server: ReturnType<typeof spawn>
+    client: ReturnType<typeof createOpencodeClient>
+    providerID: string
+    modelID: string
+  }
 
   export function url() {
-    return state().url
+    return state.url
   }
 
   export function client() {
-    return state().client
+    return state.client
   }
 
   export function closeServer() {
-    return state().server.kill()
+    return state.server.kill()
   }
 
   export async function start(onEvent?: (event: any) => void) {
-    state()
+    const proc = spawn(`opencode`, [`serve`, `--hostname=${HOST}`, `--port=${PORT}`], {
+      env: {
+        // Add GH_TOKEN for llm to use `gh` cli
+        GH_TOKEN: await Auth.token(),
+      },
+    })
+
+    const modelInfo = parseModel()
+
+    state = {
+      url: SERVER_URL,
+      server: proc,
+      client: createOpencodeClient({ baseUrl: SERVER_URL }),
+      providerID: modelInfo.providerID,
+      modelID: modelInfo.modelID,
+    }
+
     await waitForServer()
     await subscribeSessionEvents(onEvent)
   }
 
   export async function chat(text: string) {
     console.log("Sending message to opencode...")
-    const { providerID, modelID } = state()
+    const { providerID, modelID } = state
 
     const session = await client()
       .session.create<true>()
       .then((r) => r.data)
-
-    // Add GH_TOKEN for llm to use `gh` cli
-    process.env["GH_TOKEN"] = await Auth.token()
 
     const chat = await client().session.chat<true>({
       path: session,
@@ -80,6 +77,19 @@ export namespace Opencode {
     if (!match) throw new Error("Failed to parse the text response")
 
     return match.text
+  }
+
+  function parseModel() {
+    const value = process.env["MODEL"]
+    if (!value) throw new Error(`Environment variable "MODEL" is not set`)
+
+    const [providerID, ...rest] = value.split("/")
+    const modelID = rest.join("/")
+
+    if (!providerID?.length || !modelID.length)
+      throw new Error(`Invalid model ${value}. Model must be in the format "provider/model".`)
+
+    return { providerID, modelID }
   }
 
   async function waitForServer() {
