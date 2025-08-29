@@ -180,6 +180,12 @@ export namespace Config {
       result.username = os.userInfo().username
     }
 
+    if (result.environment) {
+      for (const [key, value] of Object.entries(result.environment)) {
+        process.env[key] = value
+      }
+    }
+
     log.info("loaded", result)
 
     return result
@@ -343,6 +349,12 @@ export namespace Config {
         .record(z.string(), Command)
         .optional()
         .describe("Command configuration, see https://opencode.ai/docs/commands"),
+      environment: z
+        .record(z.string(), z.string())
+        .optional()
+        .describe(
+          "Global environment variables set into process.env and available to all tools, plugins, and MCP servers.",
+        ),
       plugin: z.string().array().optional(),
       snapshot: z.boolean().optional(),
       share: z
