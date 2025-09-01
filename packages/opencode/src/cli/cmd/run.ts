@@ -173,11 +173,13 @@ export const RunCommand = cmd({
       })
 
       const messageID = Identifier.ascending("message")
-      const result = await Session.chat({
+      const result = await Session.prompt({
         sessionID: session.id,
         messageID,
-        providerID,
-        modelID,
+        model: {
+          providerID,
+          modelID,
+        },
         agent: agent.name,
         parts: [
           {
@@ -190,7 +192,7 @@ export const RunCommand = cmd({
 
       const isPiped = !process.stdout.isTTY
       if (isPiped) {
-        const match = result.parts.findLast((x) => x.type === "text")
+        const match = result.parts.findLast((x: any) => x.type === "text") as any
         if (match) process.stdout.write(UI.markdown(match.text))
         if (errorMsg) process.stdout.write(errorMsg)
       }
