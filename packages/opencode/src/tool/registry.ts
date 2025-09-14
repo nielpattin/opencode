@@ -1,4 +1,4 @@
-import z from "zod"
+import z from "zod/v4"
 import { BashTool } from "./bash"
 import { EditTool } from "./edit"
 import { GlobTool } from "./glob"
@@ -179,14 +179,14 @@ export namespace ToolRegistry {
     return result
   }
 
-  function sanitizeGeminiParameters(schema: z.ZodTypeAny, visited = new Set()): z.ZodTypeAny {
+  function sanitizeGeminiParameters(schema: z.ZodTypeAny, visited = new Set<z.ZodTypeAny>()): z.ZodTypeAny {
     if (!schema || visited.has(schema)) {
       return schema
     }
     visited.add(schema)
 
     if (schema instanceof z.ZodDefault) {
-      const innerSchema = schema.removeDefault()
+      const innerSchema = schema._def.innerType
       // Handle Gemini's incompatibility with `default` on `anyOf` (unions).
       if (innerSchema instanceof z.ZodUnion) {
         // The schema was `z.union(...).default(...)`, which is not allowed.
@@ -195,39 +195,70 @@ export namespace ToolRegistry {
       }
       // Otherwise, the default is on a regular type, which is allowed.
       // We recurse on the inner type and then re-apply the default.
-      return sanitizeGeminiParameters(innerSchema, visited).default(schema._def.defaultValue())
+      const defaultValue = schema._def.defaultValue()
+      return sanitizeGeminiParameters(innerSchema, visited).default(defaultValue)
     }
 
     if (schema instanceof z.ZodOptional) {
-      return z.optional(sanitizeGeminiParameters(schema.unwrap(), visited))
+      return z.optional(sanitizeGeminiParameters(schema._def.innerType, visited))
     }
 
     if (schema instanceof z.ZodObject) {
       const newShape: Record<string, z.ZodTypeAny> = {}
       for (const [key, value] of Object.entries(schema.shape)) {
-        newShape[key] = sanitizeGeminiParameters(value as z.ZodTypeAny, visited)
+        newShape[key] = sanitizeGeminiParameters(value, visited)
       }
       return z.object(newShape)
     }
 
     if (schema instanceof z.ZodArray) {
-      return z.array(sanitizeGeminiParameters(schema.element, visited))
+      return z.array(sanitizeGeminiParameters(schema._def.type, visited))
     }
 
     if (schema instanceof z.ZodUnion) {
       // This schema corresponds to `anyOf` in JSON Schema.
       // We recursively sanitize each option in the union.
-      const sanitizedOptions = schema.options.map((option: z.ZodTypeAny) => sanitizeGeminiParameters(option, visited))
+      const sanitizedOptions = schema._def.options.map((option) => sanitizeGeminiParameters(option, visited))
       return z.union(sanitizedOptions as [z.ZodTypeAny, z.ZodTypeAny, ...z.ZodTypeAny[]])
     }
 
     if (schema instanceof z.ZodString) {
-      const newSchema = z.string({ description: schema.description })
+      const newSchema = z.string()
+      if (schema.description) {
+        newSchema.describe(schema.description)
+      }
       const safeChecks = ["min", "max", "length", "regex", "startsWith", "endsWith", "includes", "trim"]
-      // rome-ignore lint/suspicious/noExplicitAny: <explanation>
-      ;(newSchema._def as any).checks = (schema._def as z.ZodStringDef).checks.filter((check) =>
-        safeChecks.includes(check.kind),
-      )
+      // Filter out unsafe checks for Gemini compatibility
+      const checks = (schema._def.checks || []).filter((check: any) => safeChecks.includes(check.kind))
+      // Re-apply safe checks to new schema
+      for (const check of checks) {
+        switch (check.kind) {
+          case "min":
+            newSchema.min(check.value)
+            break
+          case "max":
+            newSchema.max(check.value)
+            break
+          case "length":
+            newSchema.length(check.value)
+            break
+          case "regex":
+            newSchema.regex(check.regex)
+            break
+          case "startsWith":
+            newSchema.startsWith(check.value)
+            break
+          case "endsWith":
+            newSchema.endsWith(check.value)
+            break
+          case "includes":
+            newSchema.includes(check.value)
+            break
+          case "trim":
+            newSchema.trim()
+            break
+        }
+      }
       return newSchema
     }
 
@@ -240,11 +271,10 @@ export namespace ToolRegistry {
       const newShape: Record<string, z.ZodTypeAny> = {}
 
       for (const [key, value] of Object.entries(shape)) {
-        const zodValue = value as z.ZodTypeAny
-        if (zodValue instanceof z.ZodOptional) {
-          newShape[key] = zodValue.unwrap().nullable()
+        if (value instanceof z.ZodOptional) {
+          newShape[key] = value.unwrap().nullable()
         } else {
-          newShape[key] = optionalToNullable(zodValue)
+          newShape[key] = optionalToNullable(value)
         }
       }
 
@@ -257,11 +287,7 @@ export namespace ToolRegistry {
 
     if (schema instanceof z.ZodUnion) {
       return z.union(
-        schema.options.map((option: z.ZodTypeAny) => optionalToNullable(option)) as [
-          z.ZodTypeAny,
-          z.ZodTypeAny,
-          ...z.ZodTypeAny[],
-        ],
+        schema.options.map((option) => optionalToNullable(option)) as [z.ZodTypeAny, z.ZodTypeAny, ...z.ZodTypeAny[]],
       )
     }
 

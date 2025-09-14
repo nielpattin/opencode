@@ -13,9 +13,6 @@ import type {
   ToolRegisterData,
   ToolRegisterResponses,
   ToolRegisterErrors,
-  ToolIdsData,
-  ToolIdsResponses,
-  ToolIdsErrors,
   ToolListData,
   ToolListResponses,
   ToolListErrors,
@@ -58,8 +55,8 @@ import type {
   SessionRevertResponses,
   SessionUnrevertData,
   SessionUnrevertResponses,
-  PostSessionByIdPermissionsByPermissionIdData,
-  PostSessionByIdPermissionsByPermissionIdResponses,
+  PostSessionIdPermissionsPermissionIdData,
+  PostSessionIdPermissionsPermissionIdResponses,
   CommandListData,
   CommandListResponses,
   ConfigProvidersData,
@@ -101,6 +98,9 @@ import type {
   AuthSetData,
   AuthSetResponses,
   AuthSetErrors,
+  ToolIdsData,
+  ToolIdsResponses,
+  ToolIdsErrors,
 } from "./types.gen.js"
 import { client as _heyApiClient } from "./client.gen.js"
 
@@ -191,24 +191,14 @@ class Tool extends _HeyApiClient {
   /**
    * Register a new HTTP callback tool
    */
-  public register<ThrowOnError extends boolean = false>(options?: Options<ToolRegisterData, ThrowOnError>) {
-    return (options?.client ?? this._client).post<ToolRegisterResponses, ToolRegisterErrors, ThrowOnError>({
+  public register<ThrowOnError extends boolean = false>(options: Options<ToolRegisterData, ThrowOnError>) {
+    return (options.client ?? this._client).post<ToolRegisterResponses, ToolRegisterErrors, ThrowOnError>({
       url: "/experimental/tool/register",
       ...options,
       headers: {
         "Content-Type": "application/json",
-        ...options?.headers,
+        ...options.headers,
       },
-    })
-  }
-
-  /**
-   * List all tool IDs (including built-in and dynamically registered)
-   */
-  public ids<ThrowOnError extends boolean = false>(options?: Options<ToolIdsData, ThrowOnError>) {
-    return (options?.client ?? this._client).get<ToolIdsResponses, ToolIdsErrors, ThrowOnError>({
-      url: "/experimental/tool/ids",
-      ...options,
     })
   }
 
@@ -218,6 +208,16 @@ class Tool extends _HeyApiClient {
   public list<ThrowOnError extends boolean = false>(options: Options<ToolListData, ThrowOnError>) {
     return (options.client ?? this._client).get<ToolListResponses, ToolListErrors, ThrowOnError>({
       url: "/experimental/tool",
+      ...options,
+    })
+  }
+
+  /**
+   * List all tool IDs (including built-in and dynamically registered)
+   */
+  public ids<ThrowOnError extends boolean = false>(options: Options<ToolIdsData, ThrowOnError>) {
+    return (options.client ?? this._client).get<ToolIdsResponses, ToolIdsErrors, ThrowOnError>({
+      url: "/experimental/tool/ids",
       ...options,
     })
   }
@@ -249,13 +249,13 @@ class Session extends _HeyApiClient {
   /**
    * Create a new session
    */
-  public create<ThrowOnError extends boolean = false>(options?: Options<SessionCreateData, ThrowOnError>) {
-    return (options?.client ?? this._client).post<SessionCreateResponses, SessionCreateErrors, ThrowOnError>({
+  public create<ThrowOnError extends boolean = false>(options: Options<SessionCreateData, ThrowOnError>) {
+    return (options.client ?? this._client).post<SessionCreateResponses, SessionCreateErrors, ThrowOnError>({
       url: "/session",
       ...options,
       headers: {
         "Content-Type": "application/json",
-        ...options?.headers,
+        ...options.headers,
       },
     })
   }
@@ -675,14 +675,10 @@ export class OpencodeClient extends _HeyApiClient {
   /**
    * Respond to a permission request
    */
-  public postSessionByIdPermissionsByPermissionId<ThrowOnError extends boolean = false>(
-    options: Options<PostSessionByIdPermissionsByPermissionIdData, ThrowOnError>,
+  public postSessionIdPermissionsPermissionId<ThrowOnError extends boolean = false>(
+    options: Options<PostSessionIdPermissionsPermissionIdData, ThrowOnError>,
   ) {
-    return (options.client ?? this._client).post<
-      PostSessionByIdPermissionsByPermissionIdResponses,
-      unknown,
-      ThrowOnError
-    >({
+    return (options.client ?? this._client).post<PostSessionIdPermissionsPermissionIdResponses, unknown, ThrowOnError>({
       url: "/session/{id}/permissions/{permissionID}",
       ...options,
       headers: {
