@@ -287,7 +287,7 @@ export namespace SessionPrompt {
               }
               if (
                 MessageV2.AbortedError.isInstance(m.info.error) &&
-                m.parts.some((part) => part.type === "text" || part.type === "tool")
+                m.parts.some((part) => part.type !== "step-start" && part.type !== "reasoning")
               ) {
                 return true
               }
