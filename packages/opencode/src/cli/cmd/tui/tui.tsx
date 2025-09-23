@@ -12,10 +12,12 @@ import { SDKProvider } from "./context/sdk"
 import { SyncProvider } from "./context/sync"
 import { LocalProvider, useLocal } from "./context/local"
 import { DialogModel } from "./component/dialog-model"
-import { DialogCommand } from "./component/dialog-command"
 import { Session } from "./session"
 import { Instance } from "../../../project/instance"
 import { EventLoop } from "../../../util/eventloop"
+import { CommandProvider, useCommandDialog } from "./component/dialog-command"
+import { DialogAgent } from "./component/dialog-agent"
+import { DialogSessionList } from "./component/dialog-session-list"
 
 export const TuiCommand = cmd({
   command: "$0 [project]",
@@ -79,7 +81,9 @@ export const TuiCommand = cmd({
               <SyncProvider>
                 <LocalProvider>
                   <DialogProvider>
-                    <App />
+                    <CommandProvider>
+                      <App />
+                    </CommandProvider>
                   </DialogProvider>
                 </LocalProvider>
               </SyncProvider>
@@ -103,15 +107,11 @@ function App() {
   const renderer = useRenderer()
   const dialog = useDialog()
   const local = useLocal()
+  const command = useCommandDialog()
 
   useKeyboard(async (evt) => {
     if (evt.name === "tab") {
       local.agent.move(evt.shift ? -1 : 1)
-      return
-    }
-
-    if (evt.ctrl && evt.name === "k") {
-      dialog.replace(() => <DialogCommand />)
       return
     }
 
@@ -133,6 +133,44 @@ function App() {
   createEffect(() => {
     console.log(JSON.stringify(route.data))
   })
+
+  command.register(() => [
+    {
+      title: "Switch session",
+      value: "switch-session",
+      category: "Session",
+      onSelect: () => {
+        dialog.replace(() => <DialogSessionList />)
+      },
+    },
+    {
+      title: "New session",
+      value: "new-session",
+      category: "Session",
+      onSelect: () => {
+        route.navigate({
+          type: "home",
+        })
+        dialog.clear()
+      },
+    },
+    {
+      title: "Switch model",
+      value: "switch-model",
+      category: "Agent",
+      onSelect: () => {
+        dialog.replace(() => <DialogModel />)
+      },
+    },
+    {
+      title: "Switch agent",
+      value: "switch-agent",
+      category: "Agent",
+      onSelect: () => {
+        dialog.replace(() => <DialogAgent />)
+      },
+    },
+  ])
 
   return (
     <box width={dimensions().width} height={dimensions().height} backgroundColor={Theme.background}>

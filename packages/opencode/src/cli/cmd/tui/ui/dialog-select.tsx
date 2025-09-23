@@ -1,11 +1,12 @@
 import { InputRenderable, RGBA, ScrollBoxRenderable, TextAttributes } from "@opentui/core"
 import { Theme } from "../context/theme"
-import { entries, flatMap, groupBy, pipe } from "remeda"
+import { entries, filter, flatMap, groupBy, pipe } from "remeda"
 import { batch, createEffect, createMemo, For, Show } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useKeyboard } from "@opentui/solid"
 import * as fuzzysort from "fuzzysort"
 import { isDeepEqual } from "remeda"
+import { useDialog, type DialogContext } from "./dialog"
 
 export interface DialogSelectProps<T> {
   title: string
@@ -15,15 +16,17 @@ export interface DialogSelectProps<T> {
   current?: T
 }
 
-export interface DialogSelectOption<T> {
-  value: T
+export interface DialogSelectOption<T = any> {
   title: string
+  value: T
   description?: string
   category?: string
-  onSelect?: () => void
+  disabled?: boolean
+  onSelect?: (ctx: DialogContext) => void
 }
 
 export function DialogSelect<T>(props: DialogSelectProps<T>) {
+  const dialog = useDialog()
   const [store, setStore] = createStore({
     selected: 0,
     filter: "",
@@ -35,6 +38,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
     const needle = store.filter.toLowerCase()
     const result = pipe(
       props.options,
+      filter((x) => x.disabled !== false),
       (x) => (!needle ? x : fuzzysort.go(needle, x, { keys: ["title", "category"] }).map((x) => x.obj)),
       groupBy((x) => x.category ?? ""),
       // mapValues((x) => x.sort((a, b) => a.title.localeCompare(b.title))),
@@ -84,7 +88,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
     if (evt.name === "down") move(1)
     if (evt.name === "return") {
       const option = selected()
-      if (option.onSelect) option.onSelect()
+      if (option.onSelect) option.onSelect(dialog)
       props.onSelect?.(option)
     }
   })

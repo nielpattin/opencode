@@ -34,6 +34,7 @@ export function Prompt(props: PromptProps) {
   const sdk = useSDK()
   const route = useRoute()
   const sync = useSync()
+  const session = createMemo(() => (props.sessionID ? sync.session.get(props.sessionID) : undefined))
 
   const [store, setStore] = createStore<Prompt>({
     input: "",
@@ -206,6 +207,9 @@ export function Prompt(props: PromptProps) {
             <span style={{ bold: true }}>{local.model.parsed().model}</span>
           </text>
           <Switch>
+            <Match when={session()?.time.compacting}>
+              <text fg={Theme.textMuted}>compacting...</text>
+            </Match>
             <Match when={working()}>
               <box flexDirection="row" gap={1}>
                 <text>

@@ -25,10 +25,12 @@ import type { WebFetchTool } from "../../../tool/webfetch"
 import type { TaskTool } from "../../../tool/task"
 import { useKeyboard, type BoxProps, type JSX } from "@opentui/solid"
 import { useSDK } from "./context/sdk"
+import { useCommandDialog } from "./component/dialog-command"
 
 export function Session() {
   const route = useRouteData("session")
   const sync = useSync()
+  const command = useCommandDialog()
   const session = createMemo(() => sync.session.get(route.sessionID)!)
   const messages = createMemo(() => sync.data.message[route.sessionID] ?? [])
   const todo = createMemo(() => sync.data.todo[route.sessionID] ?? [])
@@ -47,6 +49,37 @@ export function Session() {
         },
       })
   })
+
+  command.register(() => [
+    {
+      title: "Share session",
+      value: "session.share",
+      disabled: !session().share?.url,
+      category: "Session",
+      onSelect: (ctx) => {
+        sdk.session.share({
+          path: {
+            id: route.sessionID,
+          },
+        })
+        ctx.clear()
+      },
+    },
+    {
+      title: "Unshare session",
+      value: "session.unshare",
+      disabled: !!session().share?.url,
+      category: "Session",
+      onSelect: (ctx) => {
+        sdk.session.unshare({
+          path: {
+            id: route.sessionID,
+          },
+        })
+        ctx.clear()
+      },
+    },
+  ])
 
   return (
     <box paddingTop={1} paddingBottom={1} paddingLeft={2} paddingRight={2} flexGrow={1}>

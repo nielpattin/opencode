@@ -1,61 +1,65 @@
 import { useDialog } from "../ui/dialog"
 import { DialogModel } from "./dialog-model"
-import { DialogSelect } from "../ui/dialog-select"
+import { DialogSelect, type DialogSelectOption } from "../ui/dialog-select"
 import { useRoute } from "../context/route"
 import { DialogSessionList } from "./dialog-session-list"
 import { DialogAgent } from "./dialog-agent"
+import {
+  createContext,
+  createMemo,
+  createSignal,
+  onCleanup,
+  useContext,
+  type Accessor,
+  type ParentProps,
+} from "solid-js"
+import { useKeyboard } from "@opentui/solid"
 
-export function DialogCommand() {
+type Context = ReturnType<typeof init>
+const ctx = createContext<Context>()
+
+function init() {
+  const [registrations, setRegistrations] = createSignal<Accessor<DialogSelectOption[]>[]>([])
+  const options = createMemo(() => {
+    return registrations().flatMap((x) => x())
+  })
+
+  return {
+    register(cb: () => DialogSelectOption[]) {
+      const results = createMemo(cb)
+      setRegistrations((x) => [...x, results])
+      onCleanup(() => {
+        setRegistrations((x) => x.filter((x) => x !== results))
+      })
+    },
+    get options() {
+      return options()
+    },
+  }
+}
+
+export function useCommandDialog() {
+  const value = useContext(ctx)
+  if (!value) {
+    throw new Error("useCommandDialog must be used within a CommandProvider")
+  }
+  return value
+}
+
+export function CommandProvider(props: ParentProps) {
+  const value = init()
   const dialog = useDialog()
-  const route = useRoute()
-  return (
-    <DialogSelect
-      title="Commands"
-      options={[
-        {
-          title: "Switch model",
-          value: "switch-model",
-          category: "Agent",
-          onSelect: () => {
-            dialog.replace(() => <DialogModel />)
-          },
-        },
-        {
-          title: "Switch agent",
-          value: "switch-agent",
-          category: "Agent",
-          onSelect: () => {
-            dialog.replace(() => <DialogAgent />)
-          },
-        },
-        {
-          title: "Switch session",
-          value: "switch-session",
-          category: "Session",
-          onSelect: () => {
-            dialog.replace(() => <DialogSessionList />)
-          },
-        },
-        {
-          title: "New session",
-          value: "new-session",
-          category: "Session",
-          onSelect: () => {
-            route.navigate({
-              type: "home",
-            })
-            dialog.clear()
-          },
-        },
-        {
-          title: "Share session",
-          value: "share-session",
-          category: "Session",
-          onSelect: () => {
-            console.log("share session")
-          },
-        },
-      ]}
-    />
-  )
+
+  useKeyboard((evt) => {
+    if (evt.name === "k" && evt.ctrl) {
+      dialog.replace(() => <DialogCommand options={value.options} />)
+      return
+    }
+  })
+
+  return <ctx.Provider value={value}>{props.children}</ctx.Provider>
+}
+
+function DialogCommand(props: { options: DialogSelectOption[] }) {
+  return <DialogSelect title="Commands" options={props.options} />
 }
