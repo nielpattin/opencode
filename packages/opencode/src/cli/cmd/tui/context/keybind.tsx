@@ -80,7 +80,6 @@ export function init() {
       }
       for (const key of keybind) {
         if (Keybind.match(key, parsed)) {
-          setStore("leader", false)
           return true
         }
       }
