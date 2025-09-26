@@ -271,18 +271,20 @@ const PART_MAPPING = {
 
 function ReasoningPart(props: { part: ReasoningPart; message: AssistantMessage }) {
   return (
-    <box
-      id={"text-" + props.part.id}
-      marginTop={1}
-      flexShrink={0}
-      border={["left"]}
-      customBorderChars={SplitBorder.customBorderChars}
-      borderColor={Theme.backgroundPanel}
-    >
-      <box paddingTop={1} paddingBottom={1} paddingLeft={2} backgroundColor={Theme.backgroundPanel}>
-        <text>{props.part.text.trim()}</text>
+    <Show when={props.part.text.trim()}>
+      <box
+        id={"text-" + props.part.id}
+        marginTop={1}
+        flexShrink={0}
+        border={["left"]}
+        customBorderChars={SplitBorder.customBorderChars}
+        borderColor={Theme.backgroundPanel}
+      >
+        <box paddingTop={1} paddingBottom={1} paddingLeft={2} backgroundColor={Theme.backgroundPanel}>
+          <text>{props.part.text.trim()}</text>
+        </box>
       </box>
-    </box>
+    </Show>
   )
 }
 
