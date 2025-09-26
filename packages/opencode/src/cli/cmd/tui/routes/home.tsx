@@ -1,7 +1,7 @@
-import { Installation } from "../../../installation"
-import { useTheme } from "./context/theme"
+import { Installation } from "@/installation"
+import { useTheme } from "@tui/context/theme"
 import { TextAttributes } from "@opentui/core"
-import { Prompt } from "./component/prompt"
+import { Prompt } from "@tui/component/prompt"
 import { For } from "solid-js"
 
 export function Home() {
@@ -41,7 +41,7 @@ function HelpRow(props: { children: string; slash: string; theme: any }) {
   return (
     <text>
       <span style={{ bold: true, fg: props.theme.primary }}>/{props.slash.padEnd(10, " ")}</span>
-      <span>{props.children.padEnd(15, " ")} </span>
+      <span>{props.children.padEnd(19, " ")} </span>
       <span style={{ fg: props.theme.textMuted }}>ctrl+x n</span>
     </text>
   )

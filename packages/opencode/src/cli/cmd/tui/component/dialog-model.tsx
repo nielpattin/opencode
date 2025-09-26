@@ -1,9 +1,9 @@
 import { createMemo } from "solid-js"
-import { useLocal } from "../context/local"
-import { useSync } from "../context/sync"
+import { useLocal } from "@tui/context/local"
+import { useSync } from "@tui/context/sync"
 import { map, pipe, flatMap, entries, filter, isDeepEqual } from "remeda"
-import { DialogSelect } from "../ui/dialog-select"
-import { useDialog } from "../ui/dialog"
+import { DialogSelect } from "@tui/ui/dialog-select"
+import { useDialog } from "@tui/ui/dialog"
 
 export function DialogModel() {
   const local = useLocal()

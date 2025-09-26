@@ -1,6 +1,6 @@
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid"
 import { createContext, For, Show, useContext, type JSX, type ParentProps } from "solid-js"
-import { Theme } from "../context/theme"
+import { Theme } from "@tui/context/theme"
 import { RGBA } from "@opentui/core"
 import { createStore, produce } from "solid-js/store"
 

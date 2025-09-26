@@ -1,6 +1,6 @@
 import { createContext, useContext, type ParentProps } from "solid-js"
 import { createOpencodeClient } from "@opencode-ai/sdk"
-import { Server } from "../../../../server/server"
+import { Server } from "@/server/server"
 
 function init() {
   const client = createOpencodeClient({

@@ -1,32 +1,33 @@
 import { createEffect, createMemo, For, Match, Show, Switch, type Component } from "solid-js"
 import { Dynamic } from "solid-js/web"
 import path from "path"
-import { useRouteData } from "./context/route"
-import { useSync } from "./context/sync"
-import { SplitBorder } from "./component/border"
-import { Theme } from "./context/theme"
+import { useRouteData } from "@tui/context/route"
+import { useSync } from "@tui/context/sync"
+import { SplitBorder } from "@tui/component/border"
+import { Theme } from "@tui/context/theme"
 import { BoxRenderable, ScrollBoxRenderable } from "@opentui/core"
-import { Prompt } from "./component/prompt"
+import { Prompt } from "@tui/component/prompt"
 import type { AssistantMessage, Part, ToolPart, UserMessage, TextPart } from "@opencode-ai/sdk"
-import { useLocal } from "./context/local"
-import { Locale } from "../../../util/locale"
-import type { Tool } from "../../../tool/tool"
-import type { ReadTool } from "../../../tool/read"
-import type { WriteTool } from "../../../tool/write"
-import { BashTool } from "../../../tool/bash"
-import type { GlobTool } from "../../../tool/glob"
-import { TodoWriteTool } from "../../../tool/todo"
-import type { GrepTool } from "../../../tool/grep"
-import type { ListTool } from "../../../tool/ls"
-import type { EditTool } from "../../../tool/edit"
-import type { PatchTool } from "../../../tool/patch"
-import type { WebFetchTool } from "../../../tool/webfetch"
-import type { TaskTool } from "../../../tool/task"
+import { useLocal } from "@tui/context/local"
+import { Locale } from "@/util/locale"
+import type { Tool } from "@/tool/tool"
+import type { ReadTool } from "@/tool/read"
+import type { WriteTool } from "@/tool/write"
+import { BashTool } from "@/tool/bash"
+import type { GlobTool } from "@/tool/glob"
+import { TodoWriteTool } from "@/tool/todo"
+import type { GrepTool } from "@/tool/grep"
+import type { ListTool } from "@/tool/ls"
+import type { EditTool } from "@/tool/edit"
+import type { PatchTool } from "@/tool/patch"
+import type { WebFetchTool } from "@/tool/webfetch"
+import type { TaskTool } from "@/tool/task"
 import { useKeyboard, type BoxProps, type JSX } from "@opentui/solid"
-import { useSDK } from "./context/sdk"
-import { useCommandDialog } from "./component/dialog-command"
-import { Shimmer } from "./ui/shimmer"
-import { useKeybind } from "./context/keybind"
+import { useSDK } from "@tui/context/sdk"
+import { useCommandDialog } from "@tui/component/dialog-command"
+import { Shimmer } from "@tui/ui/shimmer"
+import { useKeybind } from "@tui/context/keybind"
+import { Header } from "./header"
 
 export function Session() {
   const route = useRouteData("session")
@@ -102,24 +103,7 @@ export function Session() {
   return (
     <box paddingTop={1} paddingBottom={1} paddingLeft={2} paddingRight={2} flexGrow={1}>
       <Show when={session()}>
-        <box paddingLeft={1} paddingRight={1} {...SplitBorder} borderColor={Theme.backgroundElement} flexShrink={0}>
-          <text>
-            <span style={{ bold: true, fg: Theme.accent }}>#</span>{" "}
-            <span style={{ bold: true }}>{session().title}</span>
-          </text>
-          <box flexDirection="row">
-            <Switch>
-              <Match when={session().share?.url}>
-                <text fg={Theme.textMuted}>{session().share!.url}</text>
-              </Match>
-              <Match when={true}>
-                <text wrap={false}>
-                  /share <span style={{ fg: Theme.textMuted }}>to create a shareable link</span>
-                </text>
-              </Match>
-            </Switch>
-          </box>
-        </box>
+        <Header />
         <scrollbox
           ref={(r) => (scroll = r)}
           scrollbarOptions={{ visible: false }}

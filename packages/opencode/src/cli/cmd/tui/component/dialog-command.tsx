@@ -1,5 +1,5 @@
-import { useDialog } from "../ui/dialog"
-import { DialogSelect, type DialogSelectOption } from "../ui/dialog-select"
+import { useDialog } from "@tui/ui/dialog"
+import { DialogSelect, type DialogSelectOption } from "@tui/ui/dialog-select"
 import {
   createContext,
   createMemo,
@@ -10,7 +10,7 @@ import {
   type ParentProps,
 } from "solid-js"
 import { useKeyboard } from "@opentui/solid"
-import { useKeybind } from "../context/keybind"
+import { useKeybind } from "@tui/context/keybind"
 
 type Context = ReturnType<typeof init>
 const ctx = createContext<Context>()
@@ -26,6 +26,7 @@ function init() {
   useKeyboard((evt) => {
     for (const option of options()) {
       if (option.keybind && keybind.match(option.keybind, evt)) {
+        evt.preventDefault()
         option.onSelect?.(dialog)
         return
       }

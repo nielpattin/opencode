@@ -255,7 +255,7 @@ type Theme = {
 }
 
 import { createContext, useContext, createSignal, createEffect, onMount } from "solid-js"
-import { Storage } from "../../../../storage/storage"
+import { Storage } from "@/storage/storage"
 
 export const Theme = Object.entries(OPENCODE_THEME).reduce((acc, [key, value]) => {
   acc[key as keyof Theme] = value.dark

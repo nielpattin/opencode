@@ -1,13 +1,13 @@
 import { createMemo, useContext, type ParentProps } from "solid-js"
-import { useSync } from "./sync"
-import { Keybind } from "../../../../util/keybind"
+import { useSync } from "@tui/context/sync"
+import { Keybind } from "@/util/keybind"
 import { pipe, mapValues } from "remeda"
 import type { KeybindsConfig } from "@opencode-ai/sdk"
 import { createContext } from "solid-js"
 import type { ParsedKey, Renderable } from "@opentui/core"
 import { createStore } from "solid-js/store"
 import { useKeyboard, useRenderer } from "@opentui/solid"
-import { Instance } from "../../../../project/instance"
+import { Instance } from "@/project/instance"
 
 export function init() {
   const sync = useSync()

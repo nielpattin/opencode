@@ -1,20 +1,21 @@
 import { InputRenderable, RGBA, ScrollBoxRenderable, TextAttributes } from "@opentui/core"
-import { Theme } from "../context/theme"
-import { entries, filter, flatMap, groupBy, pipe } from "remeda"
+import { Theme } from "@tui/context/theme"
+import { entries, filter, flatMap, groupBy, pipe, take } from "remeda"
 import { batch, createEffect, createMemo, For, Show } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useKeyboard } from "@opentui/solid"
 import * as fuzzysort from "fuzzysort"
 import { isDeepEqual } from "remeda"
-import { useDialog, type DialogContext } from "./dialog"
+import { useDialog, type DialogContext } from "@tui/ui/dialog"
 import type { KeybindsConfig } from "@opencode-ai/sdk"
-import { useKeybind } from "../context/keybind"
+import { useKeybind } from "@tui/context/keybind"
 
 export interface DialogSelectProps<T> {
   title: string
   options: DialogSelectOption<T>[]
   onFilter?: (query: string) => void
   onSelect?: (option: DialogSelectOption<T>) => void
+  limit?: number
   current?: T
 }
 
@@ -23,6 +24,7 @@ export interface DialogSelectOption<T = any> {
   value: T
   keybind?: keyof KeybindsConfig
   description?: string
+  footer?: string
   category?: string
   disabled?: boolean
   onSelect?: (ctx: DialogContext) => void
@@ -42,6 +44,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
     const result = pipe(
       props.options,
       filter((x) => x.disabled !== false),
+      take(props.limit ?? Infinity),
       (x) => (!needle ? x : fuzzysort.go(needle, x, { keys: ["title", "category"] }).map((x) => x.obj)),
       groupBy((x) => x.category ?? ""),
       // mapValues((x) => x.sort((a, b) => a.title.localeCompare(b.title))),
@@ -64,7 +67,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
     scroll.scrollTo(0)
   })
 
-  function move(direction: -1 | 1) {
+  function move(direction: number) {
     let next = store.selected + direction
     if (next < 0) next = flat().length - 1
     if (next >= flat().length) next = 0
@@ -89,6 +92,8 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
   useKeyboard((evt) => {
     if (evt.name === "up") move(-1)
     if (evt.name === "down") move(1)
+    if (evt.name === "pageup") move(-10)
+    if (evt.name === "pagedown") move(10)
     if (evt.name === "return") {
       const option = selected()
       if (option.onSelect) option.onSelect(dialog)
@@ -97,6 +102,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
   })
 
   let scroll: ScrollBoxRenderable
+  const keybind = useKeybind()
 
   return (
     <box gap={1}>
@@ -147,7 +153,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
                     <Option
                       id={JSON.stringify(option.value)}
                       title={option.title}
-                      keybind={option.keybind}
+                      footer={option.footer ?? (option.keybind ? keybind.print(option.keybind as any) : undefined)}
                       description={option.description !== category ? option.description : undefined}
                       active={isDeepEqual(option.value, selected()?.value)}
                       current={isDeepEqual(option.value, props.current)}
@@ -181,9 +187,8 @@ function Option(props: {
   description?: string
   active?: boolean
   current?: boolean
-  keybind?: string
+  footer?: string
 }) {
-  const keybind = useKeybind()
   return (
     <box
       id={props.id}
@@ -201,8 +206,8 @@ function Option(props: {
         </text>
         <text fg={props.active ? Theme.background : Theme.textMuted}> {props.description}</text>
       </box>
-      <Show when={props.keybind}>
-        <text fg={props.active ? Theme.background : Theme.textMuted}>{keybind.print(props.keybind as any)}</text>
+      <Show when={props.footer}>
+        <text fg={props.active ? Theme.background : Theme.textMuted}>{props.footer}</text>
       </Show>
     </box>
   )

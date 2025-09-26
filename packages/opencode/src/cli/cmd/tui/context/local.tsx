@@ -1,10 +1,10 @@
 import { createStore } from "solid-js/store"
 import { batch, createContext, createEffect, createMemo, useContext, type ParentProps } from "solid-js"
-import { useSync } from "./sync"
-import { Theme } from "./theme"
+import { useSync } from "@tui/context/sync"
+import { Theme } from "@tui/context/theme"
 import { uniqueBy } from "remeda"
 import path from "path"
-import { Global } from "../../../../global"
+import { Global } from "@/global"
 
 function init() {
   const sync = useSync()

@@ -1,8 +1,9 @@
-import { useDialog } from "../ui/dialog"
-import { DialogSelect } from "../ui/dialog-select"
-import { useRoute } from "../context/route"
-import { useSync } from "../context/sync"
+import { useDialog } from "@tui/ui/dialog"
+import { DialogSelect } from "@tui/ui/dialog-select"
+import { useRoute } from "@tui/context/route"
+import { useSync } from "@tui/context/sync"
 import { createMemo, onMount } from "solid-js"
+import { Locale } from "@/util/locale"
 
 export function DialogSessionList() {
   const dialog = useDialog()
@@ -12,7 +13,8 @@ export function DialogSessionList() {
   const options = createMemo(() => {
     const today = new Date().toDateString()
     return sync.data.session.map((x) => {
-      let category = new Date(x.time.created).toDateString()
+      const date = new Date(x.time.updated)
+      let category = date.toDateString()
       if (category === today) {
         category = "Today"
       }
@@ -20,6 +22,7 @@ export function DialogSessionList() {
         title: x.title,
         value: x.id,
         category,
+        footer: Locale.time(x.time.updated),
       }
     })
   })
@@ -32,6 +35,7 @@ export function DialogSessionList() {
     <DialogSelect
       title="Sessions"
       options={options()}
+      limit={50}
       onSelect={(option) => {
         route.navigate({
           type: "session",

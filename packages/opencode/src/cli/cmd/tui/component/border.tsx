@@ -1,4 +1,4 @@
-import { Theme } from "../context/theme"
+import { Theme } from "@tui/context/theme"
 
 export const SplitBorder = {
   border: ["left" as const, "right" as const],
