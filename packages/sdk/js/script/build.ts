@@ -37,3 +37,5 @@ await createClient({
   ],
 })
 await $`bun prettier --write src/gen`
+await $`rm -rf dist`
+await $`bun tsc`
