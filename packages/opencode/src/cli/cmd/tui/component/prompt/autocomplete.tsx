@@ -110,47 +110,12 @@ export function Autocomplete(props: {
         {
           display: "/undo",
           description: "undo the last message",
-          onSelect: () => {
-            const revert = s.revert?.messageID
-            const message = (sync.data.message[s.id] ?? []).findLast(
-              (x) => (!revert || x.id < revert) && x.role === "user",
-            )
-            if (!message) return
-            sdk.session.revert({
-              path: {
-                id: s.id,
-              },
-              body: {
-                messageID: message.id,
-              },
-            })
-          },
+          onSelect: () => command.trigger("session.undo"),
         },
         {
           display: "/redo",
           description: "redo the last message",
-          onSelect: () => {
-            const messageID = s.revert?.messageID
-            if (!messageID) return
-            const messages = sync.data.message[s.id] ?? []
-            const message = messages.find((x) => x.role === "user" && x.id > messageID)
-            if (!message) {
-              sdk.session.unrevert({
-                path: {
-                  id: s.id,
-                },
-              })
-              return
-            }
-            sdk.session.revert({
-              path: {
-                id: s.id,
-              },
-              body: {
-                messageID: message.id,
-              },
-            })
-          },
+          onSelect: () => command.trigger("session.redo"),
         },
         {
           display: "/compact",

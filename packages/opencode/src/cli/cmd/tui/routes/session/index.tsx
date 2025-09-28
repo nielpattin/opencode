@@ -48,6 +48,10 @@ export function Session() {
     if (keybind.match("messages_page_down", evt)) scroll.scrollBy(scroll.height / 2)
   })
 
+  function toBottom() {
+    scroll.scrollTo(scroll.scrollHeight)
+  }
+
   const local = useLocal()
 
   const command = useCommandDialog()
@@ -98,6 +102,59 @@ export function Session() {
           },
         })
         dialog.clear()
+      },
+    },
+    {
+      title: "Undo",
+      value: "session.undo",
+      keybind: "messages_undo",
+      category: "Session",
+      onSelect: (dialog) => {
+        const revert = session().revert?.messageID
+        const message = messages().findLast((x) => (!revert || x.id < revert) && x.role === "user")
+        if (!message) return
+        sdk.session
+          .revert({
+            path: {
+              id: route.sessionID,
+            },
+            body: {
+              messageID: message.id,
+            },
+          })
+          .then(() => setTimeout(() => toBottom(), 100))
+        dialog.clear()
+      },
+    },
+    {
+      title: "Redo",
+      value: "session.redo",
+      keybind: "messages_redo",
+      category: "Session",
+      onSelect: () => {
+        const messageID = session().revert?.messageID
+        if (!messageID) return
+        const message = messages().find((x) => x.role === "user" && x.id > messageID)
+        if (!message) {
+          sdk.session
+            .unrevert({
+              path: {
+                id: route.sessionID,
+              },
+            })
+            .then(() => setTimeout(() => toBottom(), 100))
+          return
+        }
+        sdk.session
+          .revert({
+            path: {
+              id: route.sessionID,
+            },
+            body: {
+              messageID: message.id,
+            },
+          })
+          .then(() => setTimeout(() => toBottom(), 100))
       },
     },
   ])
@@ -178,7 +235,7 @@ export function Session() {
         <box flexShrink={0}>
           <Prompt
             onSubmit={() => {
-              scroll.scrollTo(scroll.scrollHeight)
+              toBottom()
             }}
             sessionID={route.sessionID}
           />
