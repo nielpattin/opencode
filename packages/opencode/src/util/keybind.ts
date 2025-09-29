@@ -19,7 +19,10 @@ export namespace Keybind {
     if (info.ctrl) parts.push("ctrl")
     if (info.option) parts.push("alt")
     if (info.shift) parts.push("shift")
-    if (info.name) parts.push(info.name)
+    if (info.name) {
+      if (info.name === "delete") parts.push("del")
+      else parts.push(info.name)
+    }
 
     let result = parts.join("+")
 
