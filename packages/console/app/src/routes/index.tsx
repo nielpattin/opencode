@@ -5,13 +5,13 @@ import logoLight from "../asset/logo-ornate-light.svg"
 import logoDark from "../asset/logo-ornate-dark.svg"
 import video from "../asset/lander/opencode-min.mp4"
 import videoPoster from "../asset/lander/opencode-poster.png"
-import dock from "../asset/lander/dock.png"
 import { IconCopy, IconCheck } from "../component/icon"
 import { createAsync, query } from "@solidjs/router"
 import { getActor } from "~/context/auth"
 import { withActor } from "~/context/auth.withActor"
 import { Account } from "@opencode/console-core/account.js"
 import { createStore } from "solid-js/store"
+import { EmailSignup } from "~/component/email-signup"
 
 function CopyStatus() {
   return (
@@ -869,19 +869,7 @@ export default function Home() {
             </div>
           </section>
 
-          <section data-component="email">
-            <div data-slot="dock">
-              <img src={dock} alt="" />
-            </div>
-            <div data-slot="section-title">
-              <h3>OpenCode will be available on desktop soon</h3>
-              <p>Join the waitlist for early access.</p>
-            </div>
-            <form data-slot="form" action="/subscribe" method="post">
-              <input type="email" name="email" placeholder="Email address" required />
-              <button type="submit">Subscribe</button>
-            </form>
-          </section>
+          <EmailSignup />
 
           <footer data-component="footer">
             <div data-slot="cell">

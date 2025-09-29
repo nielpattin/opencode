@@ -18,6 +18,7 @@ import { getActor } from "~/context/auth"
 import { withActor } from "~/context/auth.withActor"
 import { Account } from "@opencode/console-core/account.js"
 import { IconCheck, IconCopy } from "~/component/icon"
+import { EmailSignup } from "~/component/email-signup"
 
 function CopyStatus() {
   return (
@@ -458,8 +459,8 @@ export default function Home() {
                     What makes Zen more accurate?
                   </div>
                   <div data-slot="faq-answer" hidden>
-                    Zen only provides models that have been specifically tested and benchmarked for coding agents. You wouldn’t
-                    use a butter knife to cut steak, don’t use poor models for coding.
+                    Zen only provides models that have been specifically tested and benchmarked for coding agents. You
+                    wouldn’t use a butter knife to cut steak, don’t use poor models for coding.
                   </div>
                 </div>
               </li>
@@ -644,19 +645,7 @@ export default function Home() {
             </ul>
           </section>
 
-          <section data-component="email">
-            <div data-slot="dock">
-              <img src={dock} alt="" />
-            </div>
-            <div data-slot="section-title">
-              <h3>OpenCode will be available on desktop soon</h3>
-              <p>Join the waitlist for early access.</p>
-            </div>
-            <form data-slot="form" action="/subscribe" method="post">
-              <input type="email" name="email" placeholder="Email address" required />
-              <button type="submit">Subscribe</button>
-            </form>
-          </section>
+          <EmailSignup />
 
           <footer data-component="footer">
             <div data-slot="cell">
