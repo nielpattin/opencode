@@ -7,6 +7,7 @@ import zenLogoLight from "../../asset/zen-ornate-light.svg"
 import zenLogoDark from "../../asset/zen-ornate-dark.svg"
 import compareVideo from "../../asset/lander/opencode-comparison-min.mp4"
 import compareVideoPoster from "../../asset/lander/opencode-comparison-poster.png"
+import dock from "../../asset/lander/dock.png"
 import avatarDax from "../../asset/lander/avatar-dax.png"
 import avatarJay from "../../asset/lander/avatar-Jay.png"
 import avatarFrank from "../../asset/lander/avatar-Frank.png"
@@ -55,7 +56,39 @@ export default function Home() {
         button.removeEventListener("click", callback)
       })
     }
+
   })
+
+  onMount(() => {
+    const faq = document.querySelector('[data-component="faq"]');
+    if (!faq) return;
+
+    const handler = (e: Event) => {
+      const target = e.target as HTMLElement;
+      const q = target.closest('[data-slot="faq-question"]') as HTMLElement | null;
+      if (!q) return;
+
+      const answer = q.nextElementSibling as HTMLElement | null;
+      if (!answer) return;
+
+      const path = q.querySelector('svg path');
+
+      const isHidden = answer.hasAttribute('hidden');
+      if (isHidden) {
+        answer.removeAttribute('hidden');            // show
+        path?.setAttribute('d', 'M5 11.5H19V12.5H5V11.5Z'); // minus
+      } else {
+        answer.setAttribute('hidden', '');           // hide
+        path?.setAttribute(
+          'd',
+          'M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z' // plus
+        );
+      }
+    };
+
+    faq.addEventListener('click', handler);
+    onCleanup(() => faq.removeEventListener('click', handler));
+  });
 
   return (
     <main data-page="zen">
@@ -63,15 +96,16 @@ export default function Home() {
 
       <div data-component="content">
         <section data-component="top">
-          <img data-slot="logo light" src={logoLight}
-               alt="opencode logo light"/>
-          <img data-slot="logo dark" src={logoDark} alt="opencode logo dark"/>
-
+          <a href="./..">
+            <img data-slot="logo light" src={logoLight}
+                 alt="opencode logo light"/>
+            <img data-slot="logo dark" src={logoDark} alt="opencode logo dark"/>
+          </a>
           <nav>
             <ul>
-              <li><a href="/">GitHub <span>[25K]</span></a></li>
-              <li><a href="/docs">Docs</a></li>
-              <li><a href="/login">Login</a></li>
+              <li><a href="https://github.com/sst/opencode" target="_blank">GitHub <span>[25K]</span></a></li>
+              <li><a href="../docs">Docs</a></li>
+              <li><a href="/auth">Login</a></li>
             </ul>
           </nav>
 
@@ -150,7 +184,7 @@ export default function Home() {
                      viewBox="0 0 24 24"
                      fill="none"
                      xmlns="http://www.w3.org/2000/svg">
-                  <path d="M6.5 12L17 12M13 16.5L17.5 12L13 7.5" stroke="white"
+                  <path d="M6.5 12L17 12M13 16.5L17.5 12L13 7.5" stroke="currentColor"
                         stroke-width="1.5" stroke-linecap="square"/>
                 </svg>
 
@@ -184,19 +218,19 @@ export default function Home() {
           <div data-slot="section-title">
             <h3>What problem is Zen solving?</h3>
             <p>There are so many models available, but only a few work well with
-              coding agents. Most providers configure them differently with
+              coding agents.<br/>Most providers configure them differently with
               varying results.</p>
           </div>
           <p>We're fixing this for everyone, not just OpenCode users.</p>
           <ul>
-            <li><span>[-]</span> Testing select models and consulting their
+            <li><span>[+]</span> Testing select models and consulting their
               teams
             </li>
-            <li><span>[-]</span> Working with providers to ensure they’re
+            <li><span>[+]</span> Working with providers to ensure they’re
               delivered
               properly
             </li>
-            <li><span>[-]</span> Benchmarking all model-provider combinations we
+            <li><span>[+]</span> Benchmarking all model-provider combinations we
               recommend
             </li>
           </ul>
@@ -227,14 +261,8 @@ export default function Home() {
           <div data-slot="privacy-title">
             <h3>Your privacy is important to us</h3>
             <div>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                   xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M9.25 11.5L11 13.25L14.75 9.5M12 2.75L20.25 5.5V11.9123C20.25 16.8848 16 19.25 12 21.4079C8 19.25 3.75 16.8848 3.75 11.9123V5.5L12 2.75Z"
-                  stroke="#AEB1B9" stroke-width="1"
-                  stroke-linecap="square"/>
-              </svg>
-              <p>All Zen models are hosted in the US. Providers follow a
+
+              <p><span>[◇]</span> All Zen models are hosted in the US. Providers follow a
                 zero-retention policy and do not use your data for model
                 training, with the following exceptions.</p>
             </div>
@@ -317,6 +345,9 @@ export default function Home() {
         </section>
 
         <section data-component="email">
+          <div data-slot="dock">
+            <img src={dock} alt=""/>
+          </div>
           <div data-slot="section-title">
             <h3>OpenCode will be available on desktop soon</h3>
             <p>Join the waitlist for early access.</p>
@@ -339,152 +370,183 @@ export default function Home() {
           <ul>
             {/*Question and answer*/}
             <li>
-              <div data-slot="faq-question">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                     xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z"
-                    fill="#6D717D"/>
-                </svg>
-                What is OpenCode Zen?
-              </div>
-              <div data-slot="faq-answer">
-                Zen is a curated set of AI models tested and benchmarked for coding agents created by the team behind OpenCode.
-              </div>
-            </li>
-            {/*Question and answer*/}
-            <li>
-              <div data-slot="faq-question">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                     xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z"
-                    fill="#6D717D"/>
-                </svg>
-                What makes Zen more accurate for coding?
-              </div>
-              <div data-slot="faq-answer">
-                Zen only provides models that have been specifically tested and benchmarked for coding. You wouldn’t use a butter knife to cut steak, don’t use poor models for coding.
+              <div data-slot="faq-item">
+                <div data-slot="faq-question">
+                  <svg className="icon" width="24" height="24"
+                       viewBox="0 0 24 24" fill="none"
+                       xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z"
+                      fill="#6D717D"/>
+                  </svg>
+                  What is OpenCode Zen?
+                </div>
+                <div data-slot="faq-answer" hidden>
+                  Zen is a curated set of AI models tested and benchmarked for
+                  coding agents created by the team behind OpenCode.
+                </div>
               </div>
             </li>
             {/*Question and answer*/}
             <li>
-              <div data-slot="faq-question">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                     xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z"
-                    fill="#6D717D"/>
-                </svg>
-                Is Zen faster?
-              </div>
-              <div data-slot="faq-answer">
-                OpenCode cares about balancing quality and speed in a way that’s optimized for coding. We only select configurations that fit that criteria. Typically high quality equates to slower responses, and fast responses equates to low quality. For development OpenCode believes in balance.
-              </div>
-            </li>
-            {/*Question and answer*/}
-            <li>
-              <div data-slot="faq-question">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                     xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z"
-                    fill="#6D717D"/>
-                </svg>
-                Is Zen cheaper?
-              </div>
-              <div data-slot="faq-answer">
-                Zen is not for profit. Zen passes through the costs from the model providers to you. The higher Zen’s usage the more OpenCode can negotiate better rates and pass those to users too.
+              <div data-slot="faq-item">
+                <div data-slot="faq-question">
+                  <svg className="icon" width="24" height="24"
+                       viewBox="0 0 24 24" fill="none"
+                       xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z"
+                      fill="#6D717D"/>
+                  </svg>
+                  What makes Zen more accurate for coding?
+                </div>
+                <div data-slot="faq-answer" hidden>
+                  Zen only provides models that have been specifically tested and benchmarked for coding. You wouldn’t use a butter knife to cut steak, don’t use poor models for coding.
+                </div>
               </div>
             </li>
             {/*Question and answer*/}
             <li>
-              <div data-slot="faq-question">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                     xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z"
-                    fill="#6D717D"/>
-                </svg>
-                How much does Zen cost?
-              </div>
-              <div data-slot="faq-answer">
-                Zen bills per request at cost price, with zero markups. Meaning what the model provider charges is exactly what you pay. How much Zen costs will depend on your usage of Zen. You can set monthly spend limits in your account.
-              </div>
-            </li>
-            {/*Question and answer*/}
-            <li>
-              <div data-slot="faq-question">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                     xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z"
-                    fill="#6D717D"/>
-                </svg>
-                How does Zen pricing work?
-              </div>
-              <div data-slot="faq-answer">
-                Zen charges per request at cost price, with zero markups. Meaning what you only pay what the provider charges per request. OpenCode charges a small payment processing fee of $1.23 per $20 balance top-up to cover costs.
+              <div data-slot="faq-item">
+                <div data-slot="faq-question">
+                  <svg className="icon" width="24" height="24"
+                       viewBox="0 0 24 24" fill="none"
+                       xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z"
+                      fill="#6D717D"/>
+                  </svg>
+                  Is Zen faster?
+                </div>
+                <div data-slot="faq-answer" hidden>
+                  OpenCode cares about balancing quality and speed in a way that’s optimized for coding. We only select configurations that fit that criteria. Typically high quality equates to slower responses, and fast responses equates to low quality. For development OpenCode believes in balance.
+                </div>
               </div>
             </li>
             {/*Question and answer*/}
             <li>
-              <div data-slot="faq-question">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                     xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z"
-                    fill="#6D717D"/>
-                </svg>
-                What about data and privacy?
-              </div>
-              <div data-slot="faq-answer">
-                We take your data and privacy seriously. All Zen models are hosted in the US. Providers follow a zero-retention policy and do not use your data for model training, with the following exceptions.
-              </div>
-            </li>
-            {/*Question and answer*/}
-            <li>
-              <div data-slot="faq-question">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                     xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z"
-                    fill="#6D717D"/>
-                </svg>
-                Can I set spend limits?
-              </div>
-              <div data-slot="faq-answer">
-                Yes, set monthly spending limits in your account.
+              <div data-slot="faq-item">
+                <div data-slot="faq-question">
+                  <svg className="icon" width="24" height="24"
+                       viewBox="0 0 24 24" fill="none"
+                       xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z"
+                      fill="#6D717D"/>
+                  </svg>
+                  Is Zen cheaper?
+                </div>
+                <div data-slot="faq-answer" hidden>
+                  Zen is not for profit. Zen passes through the costs from the model providers to you. The higher Zen’s usage the more OpenCode can negotiate better rates and pass those to users too.
+                </div>
               </div>
             </li>
             {/*Question and answer*/}
             <li>
-              <div data-slot="faq-question">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                     xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z"
-                    fill="#6D717D"/>
-                </svg>
-                Can I cancel?
-              </div>
-              <div data-slot="faq-answer">
-                Yes, you can disable billing at any time and enjoy your remaining balance.
+              <div data-slot="faq-item">
+                <div data-slot="faq-question">
+                  <svg className="icon" width="24" height="24"
+                       viewBox="0 0 24 24" fill="none"
+                       xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z"
+                      fill="#6D717D"/>
+                  </svg>
+                  How much does Zen cost?
+                </div>
+                <div data-slot="faq-answer" hidden>
+                  Zen bills per request at cost price, with zero markups. Meaning what the model provider charges is exactly what you pay. How much Zen costs will depend on your usage of Zen. You can set monthly spend limits in your account.
+                </div>
               </div>
             </li>
             {/*Question and answer*/}
             <li>
-              <div data-slot="faq-question">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                     xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z"
-                    fill="#6D717D"/>
-                </svg>
-                Can I use Zen with other coding agents?
+              <div data-slot="faq-item">
+                <div data-slot="faq-question">
+                  <svg className="icon" width="24" height="24"
+                       viewBox="0 0 24 24" fill="none"
+                       xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z"
+                      fill="#6D717D"/>
+                  </svg>
+                  How does Zen pricing work?
+                </div>
+                <div data-slot="faq-answer" hidden>
+                  Zen charges per request at cost price, with zero markups. Meaning what you only pay what the provider charges per request. OpenCode charges a small payment processing fee of $1.23 per $20 balance top-up to cover costs.
+                </div>
               </div>
-              <div data-slot="faq-answer">
-                While we suggest you use Zen with OpenCode, you can use Zen with any agent. Follow the setup instructions in your preferred coding agent.
+            </li>
+            {/*Question and answer*/}
+            <li>
+              <div data-slot="faq-item">
+                <div data-slot="faq-question">
+                  <svg className="icon" width="24" height="24"
+                       viewBox="0 0 24 24" fill="none"
+                       xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z"
+                      fill="#6D717D"/>
+                  </svg>
+                  What about data and privacy?
+                </div>
+                <div data-slot="faq-answer" hidden>
+                  We take your data and privacy seriously. All Zen models are hosted in the US. Providers follow a zero-retention policy and do not use your data for model training, with the following exceptions.
+                </div>
+              </div>
+            </li>
+            {/*Question and answer*/}
+            <li>
+              <div data-slot="faq-item">
+                <div data-slot="faq-question">
+                  <svg className="icon" width="24" height="24"
+                       viewBox="0 0 24 24" fill="none"
+                       xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z"
+                      fill="#6D717D"/>
+                  </svg>
+                  Can I set spend limits?
+                </div>
+                <div data-slot="faq-answer" hidden>
+                  Yes, set monthly spending limits in your account.
+                </div>
+              </div>
+            </li>
+            {/*Question and answer*/}
+            <li>
+              <div data-slot="faq-item">
+                <div data-slot="faq-question">
+                  <svg className="icon" width="24" height="24"
+                       viewBox="0 0 24 24" fill="none"
+                       xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z"
+                      fill="#6D717D"/>
+                  </svg>
+                  Can I cancel?
+                </div>
+                <div data-slot="faq-answer" hidden>
+                  Yes, you can disable billing at any time and enjoy your remaining balance.
+                </div>
+              </div>
+            </li>
+            {/*Question and answer*/}
+            <li>
+              <div data-slot="faq-item">
+                <div data-slot="faq-question">
+                  <svg className="icon" width="24" height="24"
+                       viewBox="0 0 24 24" fill="none"
+                       xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z"
+                      fill="#6D717D"/>
+                  </svg>
+                  Can I use Zen with other coding agents?
+                </div>
+                <div data-slot="faq-answer" hidden>
+                  While we suggest you use Zen with OpenCode, you can use Zen with any agent. Follow the setup instructions in your preferred coding agent.
+                </div>
               </div>
             </li>
           </ul>
@@ -494,16 +556,16 @@ export default function Home() {
 
         <footer data-component="footer">
           <div data-slot="cell">
-            <a href="https://x.com/opencode">GitHub <span>[25K]</span></a>
+            <a href="https://github.com/sst/opencode" target="_blank">GitHub <span>[25K]</span></a>
           </div>
           <div data-slot="cell">
-            <a href="https://github.com/sst/opencode">Docs</a>
+            <a href="../docs">Docs</a>
           </div>
           <div data-slot="cell">
             <a href="https://opencode.ai/discord">Discord</a>
           </div>
           <div data-slot="cell">
-            <a href="https://x.com/opencode">@OpenCode</a>
+            <a href="https://x/opencode">X</a>
           </div>
         </footer>
       </div>
