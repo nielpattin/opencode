@@ -17,6 +17,7 @@ import { createAsync, query } from "@solidjs/router"
 import { getActor } from "~/context/auth"
 import { withActor } from "~/context/auth.withActor"
 import { Account } from "@opencode/console-core/account.js"
+import {IconCheck, IconCopy } from "~/component/icon"
 
 function CopyStatus() {
   return (
@@ -135,7 +136,7 @@ export default function Home() {
 
               {/*close*/}
               <svg class="icon icon-close" width="24" height="24"
-                   viewBox="0 0 24 24" fill="none" aria-hidden="true" hidden
+                   viewBox="0 0 24 24" fill="none" aria-hidden="true"
                    xmlns="http://www.w3.org/2000/svg">
                 <path
                   d="M12.7071 11.9993L18.0104 17.3026L17.3033 18.0097L12 12.7064L6.6967 18.0097L5.98959 17.3026L11.2929 11.9993L5.98959 6.69595L6.6967 5.98885L12 11.2921L17.3033 5.98885L18.0104 6.69595L12.7071 11.9993Z"
@@ -255,10 +256,9 @@ export default function Home() {
           <section data-component="comparison">
             <video
               src={compareVideo}
-              autoPlay
+              autoplay
               loop
               muted
-              playsInline
               preload="auto"
               poster={compareVideoPoster}
             >
