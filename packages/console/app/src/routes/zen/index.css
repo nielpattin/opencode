@@ -145,7 +145,6 @@
         }
 
         [data-component="nav-mobile-menu-list"] {
-          display: none;
           position: fixed;
           background: var(--color-background);
           top: 80px;
@@ -504,6 +503,9 @@
       color: var(--color-text-strong);
       font-weight: 500;
       cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
     }
 
     [data-slot="faq-answer"] {

@@ -1,33 +1,23 @@
 import "./index.css"
 import { Title } from "@solidjs/meta"
-import { onCleanup, onMount } from "solid-js"
-import logoLight from "../../asset/logo-ornate-light.svg"
-import logoDark from "../../asset/logo-ornate-dark.svg"
 import zenLogoLight from "../../asset/zen-ornate-light.svg"
 import zenLogoDark from "../../asset/zen-ornate-dark.svg"
 import compareVideo from "../../asset/lander/opencode-comparison-min.mp4"
 import compareVideoPoster from "../../asset/lander/opencode-comparison-poster.png"
-import dock from "../../asset/lander/dock.png"
 import avatarDax from "../../asset/lander/avatar-dax.png"
 import avatarJay from "../../asset/lander/avatar-Jay.png"
 import avatarFrank from "../../asset/lander/avatar-Frank.png"
 import avatarAdam from "../../asset/lander/avatar-Adam.png"
 import avatarDavid from "../../asset/lander/avatar-David.png"
-import { createAsync, query } from "@solidjs/router"
+import { A, createAsync, query } from "@solidjs/router"
 import { getActor } from "~/context/auth"
 import { withActor } from "~/context/auth.withActor"
 import { Account } from "@opencode/console-core/account.js"
-import { IconCheck, IconCopy } from "~/component/icon"
 import { EmailSignup } from "~/component/email-signup"
-
-function CopyStatus() {
-  return (
-    <div data-component="copy-status">
-      <IconCopy data-slot="copy" />
-      <IconCheck data-slot="check" />
-    </div>
-  )
-}
+import { Faq } from "~/component/faq"
+import { Legal } from "~/component/legal"
+import { Footer } from "~/component/footer"
+import { Header } from "~/component/header"
 
 const defaultWorkspace = query(async () => {
   "use server"
@@ -40,146 +30,13 @@ const defaultWorkspace = query(async () => {
 
 export default function Home() {
   const workspace = createAsync(() => defaultWorkspace())
-  onMount(() => {
-    const commands = document.querySelectorAll("[data-copy]")
-    for (const button of commands) {
-      const callback = () => {
-        const text = button.textContent
-        if (text) {
-          navigator.clipboard.writeText(text)
-          button.setAttribute("data-copied", "")
-          setTimeout(() => {
-            button.removeAttribute("data-copied")
-          }, 1500)
-        }
-      }
-      button.addEventListener("click", callback)
-      onCleanup(() => {
-        button.removeEventListener("click", callback)
-      })
-    }
-  })
-
-  // faq open and close
-  onMount(() => {
-    const faq = document.querySelector('[data-component="faq"]')
-    if (!faq) return
-
-    const handler = (e: Event) => {
-      const target = e.target as HTMLElement
-      const q = target.closest('[data-slot="faq-question"]') as HTMLElement | null
-      if (!q) return
-
-      const answer = q.nextElementSibling as HTMLElement | null
-      if (!answer) return
-
-      const path = q.querySelector("svg path")
-
-      const isHidden = answer.hasAttribute("hidden")
-      if (isHidden) {
-        answer.removeAttribute("hidden") // show
-        path?.setAttribute("d", "M5 11.5H19V12.5H5V11.5Z") // minus
-      } else {
-        answer.setAttribute("hidden", "") // hide
-        path?.setAttribute(
-          "d",
-          "M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z", // plus
-        )
-      }
-    }
-
-    faq.addEventListener("click", handler)
-    onCleanup(() => faq.removeEventListener("click", handler))
-  })
 
   return (
     <main data-page="zen">
       <Title>OpenCode Zen | A curated set of reliable coding optimized models</Title>
 
       <div data-component="container">
-        <section data-component="top">
-          <a href="./..">
-            <img data-slot="logo light" src={logoLight} alt="opencode logo light" />
-            <img data-slot="logo dark" src={logoDark} alt="opencode logo dark" />
-          </a>
-          <nav data-component="nav-desktop">
-            <ul>
-              <li>
-                <a href="https://github.com/sst/opencode" target="_blank">
-                  GitHub <span>[25K]</span>
-                </a>
-              </li>
-              <li>
-                <a href="../docs">Docs</a>
-              </li>
-              <li>
-                <a href="auth">Login</a>
-              </li>
-            </ul>
-          </nav>
-          <nav data-component="nav-mobile">
-            <button
-              type="button"
-              data-component="nav-mobile-toggle"
-              aria-expanded="false"
-              aria-controls="nav-mobile-menu"
-              class="nav-toggle"
-            >
-              <span class="sr-only">Open menu</span>
-
-              {/*hamburger*/}
-              <svg
-                class="icon icon-hamburger"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                aria-hidden="true"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M19 17H5V16H19V17Z" fill="currentColor" />
-                <path d="M19 8H5V7H19V8Z" fill="currentColor" />
-              </svg>
-
-              {/*close*/}
-              <svg
-                class="icon icon-close"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                aria-hidden="true"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M12.7071 11.9993L18.0104 17.3026L17.3033 18.0097L12 12.7064L6.6967 18.0097L5.98959 17.3026L11.2929 11.9993L5.98959 6.69595L6.6967 5.98885L12 11.2921L17.3033 5.98885L18.0104 6.69595L12.7071 11.9993Z"
-                  fill="currentColor"
-                />
-              </svg>
-            </button>
-
-            <div id="nav-mobile-menu" data-component="nav-mobile" hidden>
-              <nav data-component="nav-mobile-menu-list">
-                <ul>
-                  <li>
-                    <a href="/">Home</a>
-                  </li>
-                  <li>
-                    <a href="https://github.com/sst/opencode" target="_blank">
-                      GitHub <span>[25K]</span>
-                    </a>
-                  </li>
-                  <li>
-                    <a href="../docs">Docs</a>
-                  </li>
-                  <li>
-                    <a href="/auth">Login</a>
-                  </li>
-                </ul>
-              </nav>
-            </div>
-          </nav>
-        </section>
+        <Header zen />
 
         <div data-component="content">
           <section data-component="hero">
@@ -255,7 +112,7 @@ export default function Home() {
                     </svg>
                   </div>
                 </div>
-                <a href="auth">
+                <A href="auth">
                   <span>Get started with Zen </span>
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -265,7 +122,7 @@ export default function Home() {
                       stroke-linecap="square"
                     />
                   </svg>
-                </a>
+                </A>
               </div>
               <div data-slot="pricing-copy">
                 <p>
@@ -315,9 +172,9 @@ export default function Home() {
                 <span>[1]</span>
                 <div>
                   <strong>Sign up and add $20 balance</strong> - follow the{" "}
-                  <a href="" title="setup instructions">
+                  <A href="" title="setup instructions">
                     setup instructions
-                  </a>
+                  </A>
                 </div>
               </li>
               <li>
@@ -349,7 +206,7 @@ export default function Home() {
 
           <section data-component="testimonials">
             {/*Dax*/}
-            <a href="https://x.com/iamdavidhill/status/1971693263498141817">
+            <A href="https://x.com/iamdavidhill/status/1971693263498141817">
               <div data-slot="testimonial">
                 <div data-slot="name">
                   <img src={avatarDax} alt="" />
@@ -360,9 +217,9 @@ export default function Home() {
                   I can't recommend <span>@OpenCode</span> Zen enough. Seriously, it’s really good.
                 </div>
               </div>
-            </a>
+            </A>
             {/*Jay*/}
-            <a href="https://x.com/iamdavidhill/status/1971693263498141817">
+            <A href="https://x.com/iamdavidhill/status/1971693263498141817">
               <div data-slot="testimonial">
                 <div data-slot="name">
                   <img src={avatarJay} alt="" />
@@ -373,9 +230,9 @@ export default function Home() {
                   I can't recommend <span>@OpenCode</span> Zen enough. Seriously, it’s really good.
                 </div>
               </div>
-            </a>
+            </A>
             {/*Frank*/}
-            <a href="https://x.com/iamdavidhill/status/1971693263498141817">
+            <A href="https://x.com/iamdavidhill/status/1971693263498141817">
               <div data-slot="testimonial">
                 <div data-slot="name">
                   <img src={avatarFrank} alt="" />
@@ -386,9 +243,9 @@ export default function Home() {
                   I can't recommend <span>@OpenCode</span> Zen enough. Seriously, it’s really good.
                 </div>
               </div>
-            </a>
+            </A>
             {/*Adam*/}
-            <a href="https://x.com/iamdavidhill/status/1971693263498141817">
+            <A href="https://x.com/iamdavidhill/status/1971693263498141817">
               <div data-slot="testimonial">
                 <div data-slot="name">
                   <img src={avatarAdam} alt="" />
@@ -399,9 +256,9 @@ export default function Home() {
                   I can't recommend <span>@OpenCode</span> Zen enough. Seriously, it’s really good.
                 </div>
               </div>
-            </a>
+            </A>
             {/*David*/}
-            <a href="https://x.com/iamdavidhill/status/1971693263498141817">
+            <A href="https://x.com/iamdavidhill/status/1971693263498141817">
               <div data-slot="testimonial">
                 <div data-slot="name">
                   <img src={avatarDavid} alt="" />
@@ -412,7 +269,7 @@ export default function Home() {
                   I can't recommend <span>@OpenCode</span> Zen enough. Seriously, it’s really good.
                 </div>
               </div>
-            </a>
+            </A>
           </section>
 
           <section data-component="faq">
@@ -420,257 +277,75 @@ export default function Home() {
               <h3>FAQ</h3>
             </div>
             <ul>
-              {/*Question and answer*/}
               <li>
-                <div data-slot="faq-item">
-                  <div data-slot="faq-question">
-                    <svg
-                      class="icon"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z" fill="#6D717D" />
-                    </svg>
-                    What is OpenCode Zen?
-                  </div>
-                  <div data-slot="faq-answer" hidden>
-                    Zen is a curated set of AI models tested and benchmarked for coding agents created by the team
-                    behind OpenCode.
-                  </div>
-                </div>
+                <Faq question="What is OpenCode Zen?">
+                  Zen is a curated set of AI models tested and benchmarked for coding agents created by the team behind
+                  OpenCode.
+                </Faq>
               </li>
-              {/*Question and answer*/}
               <li>
-                <div data-slot="faq-item">
-                  <div data-slot="faq-question">
-                    <svg
-                      class="icon"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z" fill="#6D717D" />
-                    </svg>
-                    What makes Zen more accurate?
-                  </div>
-                  <div data-slot="faq-answer" hidden>
-                    Zen only provides models that have been specifically tested and benchmarked for coding agents. You
-                    wouldn’t use a butter knife to cut steak, don’t use poor models for coding.
-                  </div>
-                </div>
+                <Faq question="What makes Zen more accurate?">
+                  Zen only provides models that have been specifically tested and benchmarked for coding agents. You
+                  wouldn’t use a butter knife to cut steak, don’t use poor models for coding.
+                </Faq>
               </li>
-              {/*Question and answer*/}
               <li>
-                <div data-slot="faq-item">
-                  <div data-slot="faq-question">
-                    <svg
-                      class="icon"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z" fill="#6D717D" />
-                    </svg>
-                    Is Zen faster?
-                  </div>
-                  <div data-slot="faq-answer" hidden>
-                    OpenCode cares about balancing quality and speed in a way that’s optimized for coding. We only
-                    select configurations that fit that criteria. Typically high quality equates to slower responses,
-                    and fast responses equates to low quality. For development OpenCode believes in balance.
-                  </div>
-                </div>
+                <Faq question="Is Zen faster?">
+                  OpenCode cares about balancing quality and speed in a way that’s optimized for coding. We only select
+                  configurations that fit that criteria. Typically high quality equates to slower responses, and fast
+                  responses equates to low quality. For development OpenCode believes in balance.
+                </Faq>
               </li>
-              {/*Question and answer*/}
               <li>
-                <div data-slot="faq-item">
-                  <div data-slot="faq-question">
-                    <svg
-                      class="icon"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z" fill="#6D717D" />
-                    </svg>
-                    Is Zen cheaper?
-                  </div>
-                  <div data-slot="faq-answer" hidden>
-                    Zen is not for profit. Zen passes through the costs from the model providers to you. The higher
-                    Zen’s usage the more OpenCode can negotiate better rates and pass those to users too.
-                  </div>
-                </div>
+                <Faq question="Is Zen cheaper?">
+                  Zen is not for profit. Zen passes through the costs from the model providers to you. The higher Zen’s
+                  usage the more OpenCode can negotiate better rates and pass those to users too.
+                </Faq>
               </li>
-              {/*Question and answer*/}
               <li>
-                <div data-slot="faq-item">
-                  <div data-slot="faq-question">
-                    <svg
-                      class="icon"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z" fill="#6D717D" />
-                    </svg>
-                    How much does Zen cost?
-                  </div>
-                  <div data-slot="faq-answer" hidden>
-                    Zen bills per request at cost price, with zero markups. Meaning what the model provider charges is
-                    exactly what you pay. How much Zen costs will depend on your usage of Zen. You can set monthly spend
-                    limits in your account.
-                  </div>
-                </div>
+                <Faq question="How much does Zen cost?">
+                  Zen bills per request at cost price, with zero markups. Meaning what the model provider charges is
+                  exactly what you pay. How much Zen costs will depend on your usage of Zen. You can set monthly spend
+                  limits in your account.
+                </Faq>
               </li>
-              {/*Question and answer*/}
               <li>
-                <div data-slot="faq-item">
-                  <div data-slot="faq-question">
-                    <svg
-                      class="icon"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z" fill="#6D717D" />
-                    </svg>
-                    How does Zen pricing work?
-                  </div>
-                  <div data-slot="faq-answer" hidden>
-                    Zen charges per request at cost price, with zero markups. Meaning what you only pay what the
-                    provider charges per request. OpenCode charges a small payment processing fee of $1.23 per $20
-                    balance top-up to cover costs.
-                  </div>
-                </div>
+                <Faq question="How does Zen pricing work?">
+                  Zen charges per request at cost price, with zero markups. Meaning what you only pay what the provider
+                  charges per request. OpenCode charges a small payment processing fee of $1.23 per $20 balance top-up
+                  to cover costs.
+                </Faq>
               </li>
-              {/*Question and answer*/}
               <li>
-                <div data-slot="faq-item">
-                  <div data-slot="faq-question">
-                    <svg
-                      class="icon"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z" fill="#6D717D" />
-                    </svg>
-                    What about data and privacy?
-                  </div>
-                  <div data-slot="faq-answer" hidden>
-                    We take your data and privacy seriously. All Zen models are hosted in the US. Providers follow a
-                    zero-retention policy and do not use your data for model training, with the{" "}
-                    <a href="../docs/zen/#privacy">following exceptions</a>.
-                  </div>
-                </div>
+                <Faq question="What about data and privacy?">
+                  We take your data and privacy seriously. All Zen models are hosted in the US. Providers follow a
+                  zero-retention policy and do not use your data for model training, with the{" "}
+                  <A href="../docs/zen/#privacy">following exceptions</A>.
+                </Faq>
               </li>
-              {/*Question and answer*/}
               <li>
-                <div data-slot="faq-item">
-                  <div data-slot="faq-question">
-                    <svg
-                      class="icon"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z" fill="#6D717D" />
-                    </svg>
-                    Can I set spend limits?
-                  </div>
-                  <div data-slot="faq-answer" hidden>
-                    Yes, you can set monthly spending limits in your account.
-                  </div>
-                </div>
+                <Faq question="Can I set spend limits?">Yes, you can set monthly spending limits in your account.</Faq>
               </li>
-              {/*Question and answer*/}
               <li>
-                <div data-slot="faq-item">
-                  <div data-slot="faq-question">
-                    <svg
-                      class="icon"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z" fill="#6D717D" />
-                    </svg>
-                    Can I cancel?
-                  </div>
-                  <div data-slot="faq-answer" hidden>
-                    Yes, you can disable billing at any time and use your remaining balance.
-                  </div>
-                </div>
+                <Faq question="Can I cancel?">
+                  Yes, you can disable billing at any time and use your remaining balance.
+                </Faq>
               </li>
-              {/*Question and answer*/}
               <li>
-                <div data-slot="faq-item">
-                  <div data-slot="faq-question">
-                    <svg
-                      class="icon"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z" fill="#6D717D" />
-                    </svg>
-                    Can I use Zen with other coding agents?
-                  </div>
-                  <div data-slot="faq-answer" hidden>
-                    While we suggest you use Zen with OpenCode, you can use Zen with any agent. Follow the setup
-                    instructions in your preferred coding agent.
-                  </div>
-                </div>
+                <Faq question="Can I use Zen with other coding agents?">
+                  While we suggest you use Zen with OpenCode, you can use Zen with any agent. Follow the setup
+                  instructions in your preferred coding agent.
+                </Faq>
               </li>
             </ul>
           </section>
 
           <EmailSignup />
-
-          <footer data-component="footer">
-            <div data-slot="cell">
-              <a href="https://github.com/sst/opencode" target="_blank">
-                GitHub <span>[25K]</span>
-              </a>
-            </div>
-            <div data-slot="cell">
-              <a href="../docs">Docs</a>
-            </div>
-            <div data-slot="cell">
-              <a href="https://opencode.ai/discord">Discord</a>
-            </div>
-            <div data-slot="cell">
-              <a href="https://x/opencode">X</a>
-            </div>
-          </footer>
+          <Footer />
         </div>
       </div>
 
-      <div data-component="legal">
-        <span>
-          ©2025 <a href="https://anoma.ly">Anomaly</a>
-        </span>
-      </div>
+      <Legal />
     </main>
   )
 }

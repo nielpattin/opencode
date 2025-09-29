@@ -1,17 +1,18 @@
 import "./index.css"
 import { Title } from "@solidjs/meta"
-import { createMemo, Match, onCleanup, onMount, Show, Switch } from "solid-js"
-import logoLight from "../asset/logo-ornate-light.svg"
-import logoDark from "../asset/logo-ornate-dark.svg"
 import video from "../asset/lander/opencode-min.mp4"
 import videoPoster from "../asset/lander/opencode-poster.png"
 import { IconCopy, IconCheck } from "../component/icon"
-import { createAsync, query } from "@solidjs/router"
+import { A, createAsync, query } from "@solidjs/router"
 import { getActor } from "~/context/auth"
 import { withActor } from "~/context/auth.withActor"
 import { Account } from "@opencode/console-core/account.js"
-import { createStore } from "solid-js/store"
 import { EmailSignup } from "~/component/email-signup"
+import { Tabs } from "@kobalte/core/tabs"
+import { Faq } from "~/component/faq"
+import { Header } from "~/component/header"
+import { Footer } from "~/component/footer"
+import { Legal } from "~/component/legal"
 
 function CopyStatus() {
   return (
@@ -31,246 +32,27 @@ const defaultWorkspace = query(async () => {
   }
 }, "defaultWorkspace")
 
-const githubStars = query(async () => {
-  "use server"
-  try {
-    const response = await fetch("https://api.github.com/repos/sst/opencode")
-    const json = await response.json()
-    return json.stargazers_count as number
-  } catch {}
-  return undefined
-}, "githubStars")
-
 export default function Home() {
   const workspace = createAsync(() => defaultWorkspace())
-  const stars = createAsync(() => githubStars())
-  const starCount = createMemo(() =>
-    stars()
-      ? new Intl.NumberFormat("en-US", {
-          notation: "compact",
-          compactDisplay: "short",
-        }).format(stars()!)
-      : "[25K]",
-  )
 
-  const [store, setStore] = createStore({
-    mobileMenuOpen: false,
-  })
-
-  onMount(() => {
-    const commands = document.querySelectorAll("[data-copy]")
-    for (const button of commands) {
-      const callback = () => {
-        const text = button.textContent
-        if (text) {
-          navigator.clipboard.writeText(text)
-          button.setAttribute("data-copied", "")
-          setTimeout(() => {
-            button.removeAttribute("data-copied")
-          }, 1500)
-        }
-      }
-      button.addEventListener("click", callback)
-      onCleanup(() => {
-        button.removeEventListener("click", callback)
-      })
+  const handleCopyClick = (event: Event) => {
+    const button = event.currentTarget as HTMLButtonElement
+    const text = button.textContent
+    if (text) {
+      navigator.clipboard.writeText(text)
+      button.setAttribute("data-copied", "")
+      setTimeout(() => {
+        button.removeAttribute("data-copied")
+      }, 1500)
     }
-  })
-
-  //Installation options
-  function initTabs(root: Document | HTMLElement = document) {
-    const all = root.querySelectorAll<HTMLElement>('[data-component="tabs"]')
-    all.forEach((el) => {
-      const tabButtons = Array.from(el.querySelectorAll<HTMLButtonElement>('[data-slot="tab"]'))
-      const panels = Array.from(el.querySelectorAll<HTMLElement>('[data-slot="panel"]'))
-
-      // set initial active from container’s data-active or first tab
-      const initial = el.getAttribute("data-active") || tabButtons[0]?.dataset.tab || ""
-      setActive(initial)
-
-      // click handling
-      el.addEventListener("click", (e) => {
-        const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-slot="tab"]')
-        if (!btn) return
-        e.preventDefault()
-        setActive(btn.dataset.tab || "")
-      })
-
-      // keyboard (← → Home End)
-      el.addEventListener("keydown", (e) => {
-        const current = document.activeElement as HTMLButtonElement
-        if (!current?.matches('[data-slot="tab"]')) return
-
-        const i = tabButtons.indexOf(current)
-        let next = i
-
-        if (e.key === "ArrowRight") next = (i + 1) % tabButtons.length
-        if (e.key === "ArrowLeft") next = (i - 1 + tabButtons.length) % tabButtons.length
-        if (e.key === "Home") next = 0
-        if (e.key === "End") next = tabButtons.length - 1
-
-        if (next !== i) {
-          e.preventDefault()
-          tabButtons[next].focus()
-          setActive(tabButtons[next].dataset.tab || "")
-        }
-      })
-
-      function setActive(name: string) {
-        if (!name) return
-        el.setAttribute("data-active", name)
-
-        // update tabs
-        tabButtons.forEach((b) => {
-          const isActive = b.dataset.tab === name
-          b.setAttribute("aria-selected", String(isActive))
-          b.setAttribute("tabindex", isActive ? "0" : "-1")
-        })
-
-        // update panels
-        panels.forEach((p) => {
-          const show = p.dataset.tab === name
-          p.toggleAttribute("hidden", !show)
-        })
-      }
-    })
   }
-
-  // run on client only
-  onMount(() => {
-    initTabs()
-  })
-
-  // faq open and close
-  onMount(() => {
-    const faq = document.querySelector('[data-component="faq"]')
-    if (!faq) return
-
-    const handler = (e: Event) => {
-      const target = e.target as HTMLElement
-      const q = target.closest('[data-slot="faq-question"]') as HTMLElement | null
-      if (!q) return
-
-      const answer = q.nextElementSibling as HTMLElement | null
-      if (!answer) return
-
-      const path = q.querySelector("svg path")
-
-      const isHidden = answer.hasAttribute("hidden")
-      if (isHidden) {
-        answer.removeAttribute("hidden") // show
-        path?.setAttribute("d", "M5 11.5H19V12.5H5V11.5Z") // minus
-      } else {
-        answer.setAttribute("hidden", "") // hide
-        path?.setAttribute(
-          "d",
-          "M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z", // plus
-        )
-      }
-    }
-
-    faq.addEventListener("click", handler)
-    onCleanup(() => faq.removeEventListener("click", handler))
-  })
 
   return (
     <main data-page="opencode">
       <Title>OpenCode | The AI coding agent built for the terminal models</Title>
 
       <div data-component="container">
-        <section data-component="top">
-          <a href="./..">
-            <img data-slot="logo light" src={logoLight} alt="opencode logo light" />
-            <img data-slot="logo dark" src={logoDark} alt="opencode logo dark" />
-          </a>
-          <nav data-component="nav-desktop">
-            <ul>
-              <li>
-                <a href="https://github.com/sst/opencode" target="_blank">
-                  GitHub <span>[{starCount()}]</span>
-                </a>
-              </li>
-              <li>
-                <a href="../docs">Docs</a>
-              </li>
-              <li>
-                <a href="/zen">Zen</a>
-              </li>
-            </ul>
-          </nav>
-          <nav data-component="nav-mobile">
-            <button
-              type="button"
-              data-component="nav-mobile-toggle"
-              aria-expanded="false"
-              aria-controls="nav-mobile-menu"
-              class="nav-toggle"
-              onClick={() => setStore("mobileMenuOpen", !store.mobileMenuOpen)}
-            >
-              <span class="sr-only">Open menu</span>
-              <Switch>
-                <Match when={!store.mobileMenuOpen}>
-                  {/*hamburger*/}
-                  <svg
-                    class="icon icon-hamburger"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path d="M19 17H5V16H19V17Z" fill="currentColor" />
-                    <path d="M19 8H5V7H19V8Z" fill="currentColor" />
-                  </svg>
-                </Match>
-                <Match when={store.mobileMenuOpen}>
-                  {/*close*/}
-                  <svg
-                    class="icon icon-close"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M12.7071 11.9993L18.0104 17.3026L17.3033 18.0097L12 12.7064L6.6967 18.0097L5.98959 17.3026L11.2929 11.9993L5.98959 6.69595L6.6967 5.98885L12 11.2921L17.3033 5.98885L18.0104 6.69595L12.7071 11.9993Z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                </Match>
-              </Switch>
-            </button>
-
-            <Show when={store.mobileMenuOpen}>
-              <div id="nav-mobile-menu" data-component="nav-mobile">
-                <nav data-component="nav-mobile-menu-list">
-                  <ul>
-                    <li>
-                      <a href="/">Home</a>
-                    </li>
-                    <li>
-                      <a href="https://github.com/sst/opencode" target="_blank">
-                        GitHub <span>[{starCount()}]</span>
-                      </a>
-                    </li>
-                    <li>
-                      <a href="../docs">Docs</a>
-                    </li>
-                    <li>
-                      <a href="/zen">Zen</a>
-                    </li>
-                    <li>
-                      <a href="/auth">Login</a>
-                    </li>
-                  </ul>
-                </nav>
-              </div>
-            </Show>
-          </nav>
-        </section>
+        <Header />
 
         <div data-component="content">
           <section data-component="hero">
@@ -281,7 +63,7 @@ export default function Home() {
                   OpenCode is fully open source, giving you control and freedom to use any provider, any model, and any
                   editor.
                 </p>
-                <a href="/docs">
+                <A href="/docs">
                   <span>Read docs </span>
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -291,31 +73,38 @@ export default function Home() {
                       stroke-linecap="square"
                     />
                   </svg>
-                </a>
+                </A>
               </div>
               <div data-slot="installation">
-                <section data-component="tabs" data-active="curl">
-                  <div data-slot="tablist" role="tablist" aria-label="Install options">
-                    <button role="tab" data-slot="tab" data-tab="curl" aria-selected="true">
+                <Tabs
+                  as="section"
+                  aria-label="Install options"
+                  class="tabs"
+                  data-component="tabs"
+                  data-active="curl"
+                  defaultValue="curl"
+                >
+                  <Tabs.List data-slot="tablist">
+                    <Tabs.Trigger value="curl" data-slot="tab">
                       curl
-                    </button>
-                    <button role="tab" data-slot="tab" data-tab="npm">
+                    </Tabs.Trigger>
+                    <Tabs.Trigger value="npm" data-slot="tab">
                       npm
-                    </button>
-                    <button role="tab" data-slot="tab" data-tab="bun">
+                    </Tabs.Trigger>
+                    <Tabs.Trigger value="bun" data-slot="tab">
                       bun
-                    </button>
-                    <button role="tab" data-slot="tab" data-tab="brew">
+                    </Tabs.Trigger>
+                    <Tabs.Trigger value="brew" data-slot="tab">
                       brew
-                    </button>
-                    <button role="tab" data-slot="tab" data-tab="paru">
+                    </Tabs.Trigger>
+                    <Tabs.Trigger value="paru" data-slot="tab">
                       paru
-                    </button>
-                  </div>
-
+                    </Tabs.Trigger>
+                    <Tabs.Indicator />
+                  </Tabs.List>
                   <div data-slot="panels">
-                    <pre data-slot="panel" data-tab="curl">
-                      <button data-copy data-slot="command">
+                    <Tabs.Content as="pre" data-slot="panel" value="curl">
+                      <button data-copy data-slot="command" onClick={handleCopyClick}>
                         <span>
                           <span>curl -fsSL </span>
                           <span data-slot="protocol">https://</span>
@@ -324,45 +113,45 @@ export default function Home() {
                         </span>
                         <CopyStatus />
                       </button>
-                    </pre>
-                    <pre data-slot="panel" data-tab="npm" hidden>
-                      <button data-copy data-slot="command">
+                    </Tabs.Content>
+                    <Tabs.Content as="pre" data-slot="panel" value="npm">
+                      <button data-copy data-slot="command" onClick={handleCopyClick}>
                         <span>
                           <span data-slot="protocol">npm i -g </span>
                           <span data-slot="highlight">opencode</span>
                         </span>
                         <CopyStatus />
                       </button>
-                    </pre>
-                    <pre data-slot="panel" data-tab="bun" hidden>
-                      <button data-copy data-slot="command">
+                    </Tabs.Content>
+                    <Tabs.Content as="pre" data-slot="panel" value="bun">
+                      <button data-copy data-slot="command" onClick={handleCopyClick}>
                         <span>
                           <span data-slot="protocol">bun add -g </span>
                           <span data-slot="highlight">opencode</span>
                         </span>
                         <CopyStatus />
                       </button>
-                    </pre>
-                    <pre data-slot="panel" data-tab="brew" hidden>
-                      <button data-copy data-slot="command">
+                    </Tabs.Content>
+                    <Tabs.Content as="pre" data-slot="panel" value="brew">
+                      <button data-copy data-slot="command" onClick={handleCopyClick}>
                         <span>
                           <span data-slot="protocol">brew install </span>
                           <span data-slot="highlight">opencode</span>
                         </span>
                         <CopyStatus />
                       </button>
-                    </pre>
-                    <pre data-slot="panel" data-tab="paru" hidden>
-                      <button data-copy data-slot="command">
+                    </Tabs.Content>
+                    <Tabs.Content as="pre" data-slot="panel" value="paru">
+                      <button data-copy data-slot="command" onClick={handleCopyClick}>
                         <span>
                           <span data-slot="protocol">paru -S </span>
                           <span data-slot="highlight">opencode</span>
                         </span>
                         <CopyStatus />
                       </button>
-                    </pre>
+                    </Tabs.Content>
                   </div>
-                </section>
+                </Tabs>
               </div>
             </div>
           </section>
@@ -544,7 +333,7 @@ export default function Home() {
 
                 <p>
                   OpenCode takes a very conservative approach so that it can operate smoothly in privacy sensitive
-                  environments. Learn more about <a href="/docs/share/#privacy">privacy</a>.
+                  environments. Learn more about <A href="/docs/share/#privacy">privacy</A>.
                 </p>
               </div>
             </div>
@@ -555,232 +344,69 @@ export default function Home() {
               <h3>FAQ</h3>
             </div>
             <ul>
-              {/*Question and answer*/}
               <li>
-                <div data-slot="faq-item">
-                  <div data-slot="faq-question">
-                    <svg
-                      class="icon"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z" fill="#6D717D" />
-                    </svg>
-                    What is OpenCode?
-                  </div>
-                  <div data-slot="faq-answer" hidden>
-                    OpenCode is an open source agent that helps you write and run code directly from the terminal. You
-                    can pair OpenCode with any AI model, and because it’s terminal-based you can pair it with your
-                    preferred code editor.
-                  </div>
-                </div>
+                <Faq question="What is OpenCode?">
+                  OpenCode is an open source agent that helps you write and run code directly from the terminal. You can
+                  pair OpenCode with any AI model, and because it’s terminal-based you can pair it with your preferred
+                  code editor.
+                </Faq>
               </li>
-              {/*Question and answer*/}
               <li>
-                <div data-slot="faq-item">
-                  <div data-slot="faq-question">
-                    <svg
-                      class="icon"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z" fill="#6D717D" />
-                    </svg>
-                    How do I use OpenCode?
-                  </div>
-                  <div data-slot="faq-answer" hidden>
-                    The easiest way to get started is to read the <a href="/docs">intro</a>.
-                  </div>
-                </div>
+                <Faq question="How do I use OpenCode?">
+                  The easiest way to get started is to read the <A href="/docs">intro</A>.
+                </Faq>
               </li>
-              {/*Question and answer*/}
               <li>
-                <div data-slot="faq-item">
-                  <div data-slot="faq-question">
-                    <svg
-                      class="icon"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z" fill="#6D717D" />
-                    </svg>
-                    Do I need extra AI subscriptions to use OpenCode?
-                  </div>
-                  <div data-slot="faq-answer" hidden>
-                    Not necessarily, but probably. You’ll need an AI subscription if you want to connect OpenCode to a
-                    paid provider, although you can work with local models for free. While we encourage users to use{" "}
-                    <a href="/zen">Zen</a>, OpenCode works with all popular providers such as OpenAI, Anthropic, Grok
-                    etc.
-                  </div>
-                </div>
+                <Faq question="Do I need extra AI subscriptions to use OpenCode?">
+                  Not necessarily, but probably. You’ll need an AI subscription if you want to connect OpenCode to a
+                  paid provider, although you can work with local models for free. While we encourage users to use{" "}
+                  <A href="/zen">Zen</A>, OpenCode works with all popular providers such as OpenAI, Anthropic, Grok etc.
+                </Faq>
               </li>
-              {/*Question and answer*/}
               <li>
-                <div data-slot="faq-item">
-                  <div data-slot="faq-question">
-                    <svg
-                      class="icon"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z" fill="#6D717D" />
-                    </svg>
-                    Can I only use OpenCode in the terminal?
-                  </div>
-                  <div data-slot="faq-answer" hidden>
-                    Yes, for now. We are actively working on a desktop app. Join the waitlist for early access.
-                  </div>
-                </div>
+                <Faq question="Can I only use OpenCode in the terminal?">
+                  Yes, for now. We are actively working on a desktop app. Join the waitlist for early access.
+                </Faq>
               </li>
-              {/*Question and answer*/}
               <li>
-                <div data-slot="faq-item">
-                  <div data-slot="faq-question">
-                    <svg
-                      class="icon"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z" fill="#6D717D" />
-                    </svg>
-                    How much does OpenCode cost?
-                  </div>
-                  <div data-slot="faq-answer" hidden>
-                    OpenCode is 100% free to use. Any additional costs will come from your subscription to a model
-                    provider. While OpenCode works with any model provider, we recommend using <a href="/zen">Zen</a>.
-                  </div>
-                </div>
+                <Faq question="How much does OpenCode cost?">
+                  OpenCode is 100% free to use. Any additional costs will come from your subscription to a model
+                  provider. While OpenCode works with any model provider, we recommend using <A href="/zen">Zen</A>.
+                </Faq>
               </li>
-              {/*Question and answer*/}
               <li>
-                <div data-slot="faq-item">
-                  <div data-slot="faq-question">
-                    <svg
-                      class="icon"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z" fill="#6D717D" />
-                    </svg>
-                    What about data and privacy?
-                  </div>
-                  <div data-slot="faq-answer" hidden>
-                    Your data and information is only stored when you create sharable links in OpenCode. Learn more
-                    about <a href="/docs/share/#privacy">share pages</a>.
-                  </div>
-                </div>
+                <Faq question="What about data and privacy?">
+                  Your data and information is only stored when you create sharable links in OpenCode. Learn more about{" "}
+                  <A href="/docs/share/#privacy">share pages</A>.
+                </Faq>
               </li>
-              {/*Question and answer*/}
               <li>
-                <div data-slot="faq-item">
-                  <div data-slot="faq-question">
-                    <svg
-                      class="icon"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z" fill="#6D717D" />
-                    </svg>
-                    Is OpenCode open source?
-                  </div>
-                  <div data-slot="faq-answer" hidden>
-                    Yes, OpenCode is fully open source. The source code is public on{" "}
-                    <a href="https://github.com/sst/opencode" target="_blank">
-                      GitHub
-                    </a>{" "}
-                    under the{" "}
-                    <a href="https://github.com/sst/opencode?tab=MIT-1-ov-file#readme" target="_blank">
-                      MIT License
-                    </a>
-                    , meaning anyone can use, modify, or contribute to its development. Anyone from the community can
-                    file issues, submit pull requests, and extend functionality.
-                  </div>
-                </div>
+                <Faq question="Is OpenCode open source?">
+                  Yes, OpenCode is fully open source. The source code is public on{" "}
+                  <A href="https://github.com/sst/opencode" target="_blank">
+                    GitHub
+                  </A>{" "}
+                  under the{" "}
+                  <A href="https://github.com/sst/opencode?tab=MIT-1-ov-file#readme" target="_blank">
+                    MIT License
+                  </A>
+                  , meaning anyone can use, modify, or contribute to its development. Anyone from the community can file
+                  issues, submit pull requests, and extend functionality.
+                </Faq>
               </li>
-              {/*Question and answer*/}
               <li>
-                <div data-slot="faq-item">
-                  <div data-slot="faq-question">
-                    <svg
-                      class="icon"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z" fill="#6D717D" />
-                    </svg>
-                    Can I set spend limits?
-                  </div>
-                  <div data-slot="faq-answer" hidden>
-                    Yes, set monthly spending limits in your account.
-                  </div>
-                </div>
+                <Faq question="Can I set spend limits?">Yes, set monthly spending limits in your account.</Faq>
               </li>
-              {/*Question and answer*/}
               <li>
-                <div data-slot="faq-item">
-                  <div data-slot="faq-question">
-                    <svg
-                      class="icon"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z" fill="#6D717D" />
-                    </svg>
-                    Can I cancel?
-                  </div>
-                  <div data-slot="faq-answer" hidden>
-                    Yes, you can disable billing at any time and enjoy your remaining balance.
-                  </div>
-                </div>
+                <Faq question="Can I cancel?">
+                  Yes, you can disable billing at any time and enjoy your remaining balance.
+                </Faq>
               </li>
-              {/*Question and answer*/}
               <li>
-                <div data-slot="faq-item">
-                  <div data-slot="faq-question">
-                    <svg
-                      class="icon"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M12.5 11.5H19V12.5H12.5V19H11.5V12.5H5V11.5H11.5V5H12.5V11.5Z" fill="#6D717D" />
-                    </svg>
-                    Can I use Zen with other coding agents?
-                  </div>
-                  <div data-slot="faq-answer" hidden>
-                    While we suggest you use Zen with OpenCode, you can use Zen with any agent. Follow the setup
-                    instructions in your preferred coding agent.
-                  </div>
-                </div>
+                <Faq question="Can I use Zen with other coding agents?">
+                  While we suggest you use Zen with OpenCode, you can use Zen with any agent. Follow the setup
+                  instructions in your preferred coding agent.
+                </Faq>
               </li>
             </ul>
           </section>
@@ -855,7 +481,7 @@ export default function Home() {
                   </svg>
                 </div>
               </div>
-              <a href="/zen">
+              <A href="/zen">
                 <span>Learn about Zen </span>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path
@@ -865,36 +491,16 @@ export default function Home() {
                     stroke-linecap="square"
                   />
                 </svg>
-              </a>
+              </A>
             </div>
           </section>
 
           <EmailSignup />
-
-          <footer data-component="footer">
-            <div data-slot="cell">
-              <a href="https://github.com/sst/opencode" target="_blank">
-                GitHub <span>[{starCount()}]</span>
-              </a>
-            </div>
-            <div data-slot="cell">
-              <a href="/docs">Docs</a>
-            </div>
-            <div data-slot="cell">
-              <a href="https://opencode.ai/discord">Discord</a>
-            </div>
-            <div data-slot="cell">
-              <a href="https://x/opencode">X</a>
-            </div>
-          </footer>
+          <Footer />
         </div>
       </div>
 
-      <div data-component="legal">
-        <span>
-          ©2025 <a href="https://anoma.ly">Anomaly</a>
-        </span>
-      </div>
+      <Legal />
     </main>
   )
 }
