@@ -40,6 +40,7 @@ for (const [os, arch] of targets) {
   await $`mkdir -p ../../node_modules/${opentui}`
   await $`npm pack npm pack ${opentui}`.cwd(path.join(dir, "../../node_modules")).quiet()
   await $`tar -xf ../../node_modules/${opentui.replace("@opentui/", "opentui-")}-*.tgz -C ../../node_modules/${opentui} --strip-components=1`
+
   await Bun.build({
     conditions: ["browser"],
     tsconfig: "./tsconfig.json",
@@ -50,12 +51,14 @@ for (const [os, arch] of targets) {
       execArgv: [`--user-agent=opencode/${version}`, `--env-file=""`, `--`],
       windows: {},
     },
-    entrypoints: ["./src/index.ts", "./src/cli/cmd/tui/worker.ts"],
+    entrypoints: ["./src/index.ts", path.resolve(dir, "../../node_modules/@opentui/core/parser.worker.js")],
     define: {
       OPENCODE_VERSION: `'${version}'`,
       OPENCODE_TUI_PATH: `'../../../dist/${name}/bin/tui'`,
+      OTUI_TREE_SITTER_WORKER_PATH: "/$bunfs/root/../../node_modules/@opentui/core/parser.worker.js",
     },
   })
+
   await $`rm -rf ./dist/${name}/bin/tui`
   await Bun.file(`dist/${name}/package.json`).write(
     JSON.stringify(
