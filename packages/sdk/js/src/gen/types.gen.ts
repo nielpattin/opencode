@@ -1152,14 +1152,6 @@ export type EventSessionError = {
   }
 }
 
-export type EventFileWatcherUpdated = {
-  type: "file.watcher.updated"
-  properties: {
-    file: string
-    event: "add" | "change" | "unlink"
-  }
-}
-
 export type EventServerConnected = {
   type: "server.connected"
   properties: {
@@ -1183,7 +1175,6 @@ export type Event =
   | EventSessionUpdated
   | EventSessionDeleted
   | EventSessionError
-  | EventFileWatcherUpdated
   | EventServerConnected
 
 export type ProjectListData = {
