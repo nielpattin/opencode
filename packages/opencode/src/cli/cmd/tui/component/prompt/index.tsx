@@ -9,7 +9,6 @@ import { useSync } from "@tui/context/sync"
 import { Identifier } from "@/id/id"
 import { createStore, produce } from "solid-js/store"
 import { useKeybind } from "@tui/context/keybind"
-import { Clipboard } from "@/util/clipboard"
 import { usePromptHistory, type PromptInfo } from "./history"
 import { type AutocompleteRef, Autocomplete } from "./autocomplete"
 import { iife } from "@/util/iife"
@@ -188,10 +187,7 @@ export function Prompt(props: PromptProps) {
           <box paddingTop={1} paddingBottom={2} backgroundColor={Theme.backgroundElement} flexGrow={1}>
             <input
               onPaste={async function (text) {
-                const content = await Clipboard.read()
-                if (!content) {
-                  this.insertText(text)
-                }
+                this.insertText(text)
               }}
               onInput={(value) => {
                 let diff = value.length - store.prompt.input.length

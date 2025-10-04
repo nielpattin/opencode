@@ -790,6 +790,64 @@ ToolRegistry.register<typeof EditTool>({
   name: "edit",
   container: "block",
   ready(props) {
+    const diff = createMemo(() => {
+      const diff = props.metadata.diff ?? props.permission["diff"]
+      if (!diff) return null
+      const patches = parsePatch(diff)
+      if (patches.length === 0) return null
+
+      const patch = patches[0]
+      const oldLines: string[] = []
+      const newLines: string[] = []
+
+      for (const hunk of patch.hunks) {
+        let i = 0
+        while (i < hunk.lines.length) {
+          const line = hunk.lines[i]
+
+          if (line.startsWith("-")) {
+            const removedLines: string[] = []
+            while (i < hunk.lines.length && hunk.lines[i].startsWith("-")) {
+              removedLines.push("- " + hunk.lines[i].slice(1))
+              i++
+            }
+
+            const addedLines: string[] = []
+            while (i < hunk.lines.length && hunk.lines[i].startsWith("+")) {
+              addedLines.push("+ " + hunk.lines[i].slice(1))
+              i++
+            }
+
+            const maxLen = Math.max(removedLines.length, addedLines.length)
+            for (let j = 0; j < maxLen; j++) {
+              oldLines.push(removedLines[j] ?? "")
+              newLines.push(addedLines[j] ?? "")
+            }
+          } else if (line.startsWith("+")) {
+            const addedLines: string[] = []
+            while (i < hunk.lines.length && hunk.lines[i].startsWith("+")) {
+              addedLines.push("+ " + hunk.lines[i].slice(1))
+              i++
+            }
+
+            for (const added of addedLines) {
+              oldLines.push("")
+              newLines.push(added)
+            }
+          } else {
+            oldLines.push("  " + line.slice(1))
+            newLines.push("  " + line.slice(1))
+            i++
+          }
+        }
+      }
+
+      return {
+        oldContent: oldLines.join("\n"),
+        newContent: newLines.join("\n"),
+      }
+    })
+
     const code = createMemo(() => {
       if (!props.metadata.diff) return ""
       const text = props.metadata.diff.split("\n").slice(5).join("\n")
@@ -804,23 +862,19 @@ ToolRegistry.register<typeof EditTool>({
           <Match when={props.permission["diff"]}>
             <text>{props.permission["diff"]?.trim()}</text>
           </Match>
+          <Match when={diff()}>
+            <box paddingLeft={1} flexDirection="row" gap={2}>
+              <box flexGrow={1} flexBasis={0}>
+                <code filetype="typescript" syntaxStyle={syntaxTheme} content={diff()!.oldContent} />
+              </box>
+              <box flexGrow={1} flexBasis={0}>
+                <code filetype="typescript" syntaxStyle={syntaxTheme} content={diff()!.newContent} />
+              </box>
+            </box>
+          </Match>
           <Match when={code()}>
             <box paddingLeft={1}>
               <code filetype={pathToFiletype(props.input.filePath!)} syntaxStyle={syntaxTheme} content={code()} />
-            </box>
-          </Match>
-          <Match when={props.input.newString && props.input.oldString}>
-            <box paddingLeft={1}>
-              <code
-                filetype={pathToFiletype(props.input.filePath!)}
-                syntaxStyle={syntaxTheme}
-                content={props.input.oldString}
-              />
-              <code
-                filetype={pathToFiletype(props.input.filePath!)}
-                syntaxStyle={syntaxTheme}
-                content={props.input.newString}
-              />
             </box>
           </Match>
         </Switch>

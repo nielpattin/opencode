@@ -1,5 +1,6 @@
 import { cmd } from "@/cli/cmd/cmd"
 import { render, useKeyboard, useRenderer, useTerminalDimensions } from "@opentui/solid"
+import { Clipboard } from "@tui/util/clipboard"
 import { TextAttributes } from "@opentui/core"
 import { RouteProvider, useRoute } from "@tui/context/route"
 import { Switch, Match, createEffect, untrack } from "solid-js"
@@ -167,7 +168,19 @@ function App(props: { onExit: () => void }) {
   })
 
   return (
-    <box width={dimensions().width} height={dimensions().height} backgroundColor={Theme.background}>
+    <box
+      width={dimensions().width}
+      height={dimensions().height}
+      backgroundColor={Theme.background}
+      onMouseUp={async () => {
+        const text = renderer.getSelection()?.getSelectedText()
+        if (text && text.length > 0) {
+          console.log("copying", text)
+          await Clipboard.copy(text)
+          renderer.clearSelection()
+        }
+      }}
+    >
       <box flexDirection="column" flexGrow={1}>
         <Switch>
           <Match when={route.data.type === "home"}>
