@@ -549,7 +549,7 @@ test("revert should not delete files that existed but were deleted in snapshot",
       await Bun.write(`${tmp.path}/a.txt`, "recreated content")
 
       const patch = await Snapshot.patch(snapshot2!)
-      expect(patch.files).toContain(`${tmp.path}/a.txt`)
+      expect(patch.files).toContain(`a.txt`)
 
       await Snapshot.revert([patch])
 
@@ -573,8 +573,8 @@ test("revert preserves file that existed in snapshot when deleted then recreated
       await Bun.write(`${tmp.path}/newfile.txt`, "new")
 
       const patch = await Snapshot.patch(snapshot!)
-      expect(patch.files).toContain(`${tmp.path}/existing.txt`)
-      expect(patch.files).toContain(`${tmp.path}/newfile.txt`)
+      expect(patch.files).toContain(`existing.txt`)
+      expect(patch.files).toContain(`newfile.txt`)
 
       await Snapshot.revert([patch])
 

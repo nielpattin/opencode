@@ -10,7 +10,19 @@ import { Instance } from "../project/instance"
 export namespace Snapshot {
   const log = Log.create({ service: "snapshot" })
 
-  export function init() {}
+  export function init() {
+    Array.fromAsync(
+      new Bun.Glob("**/snapshot").scan({
+        absolute: true,
+        onlyFiles: false,
+        cwd: Global.Path.data,
+      }),
+    ).then((files) => {
+      for (const file of files) {
+        fs.rmdir(file, { recursive: true })
+      }
+    })
+  }
 
   export async function track() {
     if (Instance.project.vcs !== "git") return
@@ -101,7 +113,8 @@ export namespace Snapshot {
             log.info("file existed in snapshot but checkout failed, keeping", { file })
           } else {
             log.info("file did not exist in snapshot, deleting", { file })
-            await fs.unlink(file).catch(() => {})
+            const absolutePath = path.join(Instance.worktree, file)
+            await fs.unlink(absolutePath).catch(() => {})
           }
         }
         files.add(file)
