@@ -3,7 +3,7 @@ import { Theme } from "@tui/context/theme"
 import { entries, filter, flatMap, groupBy, pipe, take } from "remeda"
 import { batch, createEffect, createMemo, For, Show } from "solid-js"
 import { createStore } from "solid-js/store"
-import { useKeyboard } from "@opentui/solid"
+import { useKeyboard, useRenderer, useTerminalDimensions } from "@opentui/solid"
 import * as fuzzysort from "fuzzysort"
 import { isDeepEqual } from "remeda"
 import { useDialog, type DialogContext } from "@tui/ui/dialog"
@@ -73,6 +73,12 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
       flatMap(([_, options]) => options),
     )
   })
+
+  const dimensions = useTerminalDimensions()
+  const height = createMemo(() =>
+    Math.min(flat().length + grouped().length * 2 - 1, Math.floor(dimensions().height / 2) - 6),
+  )
+
   const selected = createMemo(() => flat()[store.selected])
 
   createEffect(() => {
@@ -160,7 +166,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
         paddingRight={2}
         scrollbarOptions={{ visible: false }}
         ref={(r: ScrollBoxRenderable) => (scroll = r)}
-        maxHeight={10}
+        maxHeight={height()}
       >
         <For each={grouped()}>
           {([category, options], index) => (
