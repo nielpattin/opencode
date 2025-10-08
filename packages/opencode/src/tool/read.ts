@@ -7,6 +7,7 @@ import { FileTime } from "../file/time"
 import DESCRIPTION from "./read.txt"
 import { Filesystem } from "../util/filesystem"
 import { Instance } from "../project/instance"
+import { Provider } from "../provider/provider"
 
 const DEFAULT_READ_LIMIT = 2000
 const MAX_LINE_LENGTH = 2000
@@ -51,18 +52,30 @@ export const ReadTool = Tool.define("read", {
     }
 
     const isImage = isImageFile(filepath)
+    const supportsImages = await (async () => {
+      if (!ctx.extra?.["providerID"] || !ctx.extra?.["modelID"]) return false
+      const providerID = ctx.extra["providerID"] as string
+      const modelID = ctx.extra["modelID"] as string
+      const model = await Provider.getModel(providerID, modelID).catch(() => undefined)
+      if (!model) return false
+      return model.info.modalities?.input?.includes("image") ?? false
+    })()
     if (isImage) {
+      if (!supportsImages) {
+        throw new Error(`Model may not be able to read images`)
+      }
       const mime = file.type
-      const msg = `Image read successfully`
+      const msg = "Image read successfully"
       return {
         title,
         output: msg,
-        part: {
-          type: "file",
-          url: Buffer.from(await file.bytes()).toString("base64"),
-          mime,
-          filename: filepath,
-        },
+        parts: [
+          {
+            type: "file",
+            url: Buffer.from(await file.bytes()).toString("base64"),
+            mime,
+          },
+        ],
         metadata: {
           preview: msg,
         },

@@ -5,15 +5,13 @@ export namespace Tool {
     [key: string]: any
   }
 
-  export type PartOutput =
-    | { type: "text"; text: string }
-    | { type: "file"; url: string; mime: string; filename?: string }
+  export type PartOutput = { type: "text"; text: string } | { type: "file"; url: string; mime: string }
 
   export type ExecuteResult<M extends Metadata = Metadata> = {
     title: string
     metadata: M
     output: string
-    part?: PartOutput
+    parts?: PartOutput[]
   }
 
   export type Context<M extends Metadata = Metadata> = {

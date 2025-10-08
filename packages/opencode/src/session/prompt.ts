@@ -453,6 +453,10 @@ export namespace SessionPrompt {
             abort: options.abortSignal!,
             messageID: input.processor.message.id,
             callID: options.toolCallId,
+            extra: {
+              modelID: input.modelID,
+              providerID: input.providerID,
+            },
             agent: input.agent.name,
             metadata: async (val) => {
               const match = input.processor.partFromToolCall(options.toolCallId)
@@ -485,22 +489,24 @@ export namespace SessionPrompt {
         },
         toModelOutput: (result: any) => {
           const res = result as Tool.ExecuteResult
-          if (res.part) {
-            if (res.part.type === "text") {
-              return {
-                type: "text",
-                value: res.part.text,
+          if (res.parts) {
+            const parts = res.parts.map((part) => {
+              if (part.type === "text") {
+                return {
+                  type: "text",
+                  text: part.text,
+                } as const
               }
-            }
+              return {
+                type: "media",
+                mediaType: part.mime,
+                data: part.url,
+              } as const
+            })
+
             return {
               type: "content",
-              value: [
-                {
-                  type: "media",
-                  mediaType: res.part.mime,
-                  data: res.part.url,
-                },
-              ],
+              value: parts,
             }
           }
 
