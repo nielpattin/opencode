@@ -1024,6 +1024,13 @@ export type McpStatusFailed = {
 
 export type McpStatus = McpStatusConnected | McpStatusDisabled | McpStatusFailed
 
+export type LspStatus = {
+  id: string
+  name: string
+  root: string
+  status: "connected" | "error"
+}
+
 export type OAuth = {
   type: "oauth"
   refresh: string
@@ -1056,6 +1063,13 @@ export type EventLspClientDiagnostics = {
   properties: {
     serverID: string
     path: string
+  }
+}
+
+export type EventLspUpdated = {
+  type: "lsp.updated"
+  properties: {
+    [key: string]: unknown
   }
 }
 
@@ -1189,6 +1203,7 @@ export type EventServerConnected = {
 export type Event =
   | EventInstallationUpdated
   | EventLspClientDiagnostics
+  | EventLspUpdated
   | EventMessageUpdated
   | EventMessageRemoved
   | EventMessagePartUpdated
@@ -2111,6 +2126,24 @@ export type McpStatusResponses = {
 }
 
 export type McpStatusResponse = McpStatusResponses[keyof McpStatusResponses]
+
+export type LspStatusData = {
+  body?: never
+  path?: never
+  query?: {
+    directory?: string
+  }
+  url: "/lsp"
+}
+
+export type LspStatusResponses = {
+  /**
+   * LSP server status
+   */
+  200: Array<LspStatus>
+}
+
+export type LspStatusResponse = LspStatusResponses[keyof LspStatusResponses]
 
 export type TuiAppendPromptData = {
   body?: {

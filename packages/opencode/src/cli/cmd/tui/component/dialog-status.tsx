@@ -1,12 +1,14 @@
 import { TextAttributes } from "@opentui/core"
 import { Theme } from "../context/theme"
 import { useSDK } from "../context/sdk"
+import { useSync } from "@tui/context/sync"
 import { createResource, For, Match, Switch } from "solid-js"
 
 export type DialogStatusProps = {}
 
 export function DialogStatus() {
   const sdk = useSDK()
+  const sync = useSync()
 
   const [mcp] = createResource(async () => {
     const result = await sdk.mcp.status()
@@ -50,6 +52,31 @@ export function DialogStatus() {
           )}
         </For>
       </box>
+      {sync.data.lsp.length > 0 && (
+        <box>
+          <text>{sync.data.lsp.length} LSP Servers</text>
+          <For each={sync.data.lsp}>
+            {(item) => (
+              <box flexDirection="row" gap={1}>
+                <text
+                  flexShrink={0}
+                  style={{
+                    fg: {
+                      connected: Theme.success,
+                      error: Theme.error,
+                    }[item.status],
+                  }}
+                >
+                  •
+                </text>
+                <text wrapMode="word">
+                  <b>{item.id}</b> <span style={{ fg: Theme.textMuted }}>{item.root}</span>
+                </text>
+              </box>
+            )}
+          </For>
+        </box>
+      )}
     </box>
   )
 }

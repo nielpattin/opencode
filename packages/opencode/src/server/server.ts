@@ -1204,6 +1204,26 @@ export namespace Server {
           return c.json(await MCP.status())
         },
       )
+      .get(
+        "/lsp",
+        describeRoute({
+          description: "Get LSP server status",
+          operationId: "lsp.status",
+          responses: {
+            200: {
+              description: "LSP server status",
+              content: {
+                "application/json": {
+                  schema: resolver(LSP.Status.array()),
+                },
+              },
+            },
+          },
+        }),
+        async (c) => {
+          return c.json(await LSP.status())
+        },
+      )
       .post(
         "/tui/append-prompt",
         describeRoute({

@@ -93,6 +93,33 @@ export function Sidebar(props: { sessionID: string }) {
           )}
         </For>
       </box>
+      <Show when={sync.data.lsp.length > 0}>
+        <box>
+          <text>
+            <b>LSP</b>
+          </text>
+          <For each={sync.data.lsp}>
+            {(item) => (
+              <box flexDirection="row" gap={1}>
+                <text
+                  flexShrink={0}
+                  style={{
+                    fg: {
+                      connected: Theme.success,
+                      error: Theme.error,
+                    }[item.status],
+                  }}
+                >
+                  •
+                </text>
+                <text fg={Theme.textMuted}>
+                  {item.id} {item.root}
+                </text>
+              </box>
+            )}
+          </For>
+        </box>
+      </Show>
       <Show when={files().length > 0}>
         <box>
           <text>

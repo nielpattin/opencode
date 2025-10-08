@@ -1,4 +1,15 @@
-import type { Message, Agent, Provider, Session, Part, Config, Todo, Command, Permission } from "@opencode-ai/sdk"
+import type {
+  Message,
+  Agent,
+  Provider,
+  Session,
+  Part,
+  Config,
+  Todo,
+  Command,
+  Permission,
+  LspStatus,
+} from "@opencode-ai/sdk"
 import { createStore, produce, reconcile } from "solid-js/store"
 import { useSDK } from "@tui/context/sdk"
 import { Binary } from "@/util/binary"
@@ -26,6 +37,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
       part: {
         [messageID: string]: Part[]
       }
+      lsp: LspStatus[]
     }>({
       config: {},
       ready: false,
@@ -37,6 +49,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
       todo: {},
       message: {},
       part: {},
+      lsp: [],
     })
 
     const sdk = useSDK()
@@ -177,6 +190,11 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
               )
             break
           }
+
+          case "lsp.updated": {
+            sdk.lsp.status().then((x) => setStore("lsp", x.data!))
+            break
+          }
         }
       }
     })
@@ -187,6 +205,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
       sdk.session.list().then((x) => setStore("session", x.data ?? [])),
       sdk.config.get().then((x) => setStore("config", x.data!)),
       sdk.command.list().then((x) => setStore("command", x.data ?? [])),
+      sdk.lsp.status().then((x) => setStore("lsp", x.data!)),
     ]).then(() => setStore("ready", true))
 
     const result = {

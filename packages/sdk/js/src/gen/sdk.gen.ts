@@ -84,6 +84,8 @@ import type {
   AppAgentsResponses,
   McpStatusData,
   McpStatusResponses,
+  LspStatusData,
+  LspStatusResponses,
   TuiAppendPromptData,
   TuiAppendPromptResponses,
   TuiOpenHelpData,
@@ -581,6 +583,18 @@ class Mcp extends _HeyApiClient {
   }
 }
 
+class Lsp extends _HeyApiClient {
+  /**
+   * Get LSP server status
+   */
+  public status<ThrowOnError extends boolean = false>(options?: Options<LspStatusData, ThrowOnError>) {
+    return (options?.client ?? this._client).get<LspStatusResponses, unknown, ThrowOnError>({
+      url: "/lsp",
+      ...options,
+    })
+  }
+}
+
 class Tui extends _HeyApiClient {
   /**
    * Append prompt to the TUI
@@ -739,6 +753,7 @@ export class OpencodeClient extends _HeyApiClient {
   file = new File({ client: this._client })
   app = new App({ client: this._client })
   mcp = new Mcp({ client: this._client })
+  lsp = new Lsp({ client: this._client })
   tui = new Tui({ client: this._client })
   auth = new Auth({ client: this._client })
   event = new Event({ client: this._client })
