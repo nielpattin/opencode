@@ -223,10 +223,9 @@ function App(props: { onExit: () => void }) {
           <text fg={Theme.textMuted} paddingRight={1}>
             tab
           </text>
-          <text fg={local.agent.color(local.agent.current().name)}>┃</text>
+          <text fg={local.agent.color(local.agent.current().name)}>{""}</text>
           <text bg={local.agent.color(local.agent.current().name)} fg={Theme.background} wrap={false}>
-            {" "}
-            <span style={{ bold: true }}>{local.agent.current().name.toUpperCase()}</span>
+            <span style={{ bold: true }}> {local.agent.current().name.toUpperCase()}</span>
             <span> AGENT </span>
           </text>
         </box>
