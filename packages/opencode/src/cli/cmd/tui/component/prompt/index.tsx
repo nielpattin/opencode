@@ -14,8 +14,7 @@ import { type AutocompleteRef, Autocomplete } from "./autocomplete"
 import { iife } from "@/util/iife"
 import { useCommandDialog } from "../dialog-command"
 import { useRenderer } from "@opentui/solid"
-import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { Editor } from "@tui/util/editor"
 
 export type PromptProps = {
   sessionID?: string
@@ -56,27 +55,13 @@ export function Prompt(props: PromptProps) {
         keybind: "editor_open",
         value: "prompt.editor",
         onSelect: async () => {
-          const editor = process.env["EDITOR"]
-          if (!editor) return
           const value = input.value
           input.value = ""
           setStore("prompt", {
             input: "",
             parts: [],
           })
-          const tmpPath = join(tmpdir(), `msg_${Date.now()}.md`)
-          await Bun.write(tmpPath, value)
-          renderer.suspend()
-          renderer.currentRenderBuffer.clear()
-          const parts = editor.split(" ")
-          const proc = Bun.spawn({
-            cmd: [...parts, tmpPath],
-            stdin: "inherit",
-            stdout: "inherit",
-            stderr: "inherit",
-          })
-          await proc.exited
-          const content = await Bun.file(tmpPath).text()
+          const content = await Editor.open({ value, renderer })
           if (content) {
             setStore("prompt", {
               input: content,
@@ -84,8 +69,6 @@ export function Prompt(props: PromptProps) {
             })
             input.cursorPosition = content.length
           }
-          renderer.resume()
-          renderer.requestRender()
         },
       },
     ]
