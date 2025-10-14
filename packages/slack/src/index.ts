@@ -51,9 +51,10 @@ async function initializeGlobalEventStream(client: any) {
 async function handleToolUpdate(toolPart: any, channel: string, thread: string) {
   const toolName = toolPart.tool || "unknown"
   const state = toolPart.state || "unknown"
+  const title = toolPart.title
   const icon = state === "completed" ? "✅" : state === "error" ? "❌" : state === "running" ? "🔄" : "⏳"
 
-  const toolMessage = `${icon} *${toolName}*`
+  const toolMessage = title ? `${icon} *${toolName}* - ${title}` : `${icon} *${toolName}*`
 
   // Just send a single message for this tool event
   try {
