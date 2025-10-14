@@ -204,15 +204,20 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
       }
     })
 
+    // blocking
     Promise.all([
       sdk.config.providers().then((x) => setStore("provider", x.data!.providers)),
       sdk.app.agents().then((x) => setStore("agent", x.data ?? [])),
-      sdk.session.list().then((x) => setStore("session", x.data ?? [])),
       sdk.config.get().then((x) => setStore("config", x.data!)),
+    ]).then(() => setStore("ready", true))
+
+    // non-blocking
+    Promise.all([
+      sdk.session.list().then((x) => setStore("session", x.data ?? [])),
       sdk.command.list().then((x) => setStore("command", x.data ?? [])),
       sdk.lsp.status().then((x) => setStore("lsp", x.data!)),
       sdk.mcp.status().then((x) => setStore("mcp", x.data!)),
-    ]).then(() => setStore("ready", true))
+    ])
 
     const result = {
       data: store,
