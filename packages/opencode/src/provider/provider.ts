@@ -210,6 +210,7 @@ export namespace Provider {
       { providerID: string; modelID: string; info: ModelsDev.Model; language: LanguageModel; npm?: string }
     >()
     const sdk = new Map<number, SDK>()
+    // Maps `${provider}/${key}` to the provider’s actual model ID for custom aliases.
     const realIdByKey = new Map<string, string>()
 
     log.info("init")
