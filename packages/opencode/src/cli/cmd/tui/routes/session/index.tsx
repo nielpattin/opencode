@@ -56,6 +56,7 @@ import { DialogTimeline } from "./dialog-timeline"
 import { Sidebar } from "./sidebar"
 import { LANGUAGE_EXTENSIONS } from "@/lsp/language"
 import parsers from "../../../../../../parsers-config.json"
+import { Toast } from "../../ui/toast"
 
 addDefaultParsers(parsers.parsers)
 
@@ -528,6 +529,7 @@ export function Session() {
               />
             </box>
           </Show>
+          <Toast />
         </box>
         <Show when={sidebarVisible()}>
           <Sidebar sessionID={route.sessionID} />
