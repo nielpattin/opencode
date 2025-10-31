@@ -207,10 +207,8 @@
         "partial-json": "0.1.7",
         "remeda": "catalog:",
         "solid-js": "catalog:",
-        "tree-sitter": "0.22.4",
-        "tree-sitter-bash": "0.23.3",
-        "tree-sitter-highlight": "1.0.1",
-        "tree-sitter-typescript": "0.23.2",
+        "tree-sitter": "0.25.0",
+        "tree-sitter-bash": "0.25.0",
         "turndown": "7.2.0",
         "ulid": "catalog:",
         "vscode-jsonrpc": "8.2.1",
@@ -3308,15 +3306,9 @@
 
     "tr46": ["tr46@0.0.3", "", {}, "sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw=="],
 
-    "tree-sitter": ["tree-sitter@0.22.4", "", { "dependencies": { "node-addon-api": "^8.3.0", "node-gyp-build": "^4.8.4" } }, "sha512-usbHZP9/oxNsUY65MQUsduGRqDHQOou1cagUSwjhoSYAmSahjQDAVsh9s+SlZkn8X8+O1FULRGwHu7AFP3kjzg=="],
+    "tree-sitter": ["tree-sitter@0.25.0", "", { "dependencies": { "node-addon-api": "^8.3.0", "node-gyp-build": "^4.8.4" } }, "sha512-PGZZzFW63eElZJDe/b/R/LbsjDDYJa5UEjLZJB59RQsMX+fo0j54fqBPn1MGKav/QNa0JR0zBiVaikYDWCj5KQ=="],
 
-    "tree-sitter-bash": ["tree-sitter-bash@0.23.3", "", { "dependencies": { "node-addon-api": "^8.2.1", "node-gyp-build": "^4.8.2" }, "peerDependencies": { "tree-sitter": "^0.21.1" }, "optionalPeers": ["tree-sitter"] }, "sha512-36cg/GQ2YmIbeiBeqeuh4fBJ6i4kgVouDaqTxqih5ysPag+zHufyIaxMOFeM8CeplwAK/Luj1o5XHqgdAfoCZg=="],
-
-    "tree-sitter-highlight": ["tree-sitter-highlight@1.0.1", "", {}, "sha512-PKoUNRI++rVXLsiYP5s3Ro5TnamZ0+7GMIzTGiga0i4YsyWlleei9cdBjX1GWCSAreOw+fnhqCQF5bHChnY8KQ=="],
-
-    "tree-sitter-javascript": ["tree-sitter-javascript@0.23.1", "", { "dependencies": { "node-addon-api": "^8.2.2", "node-gyp-build": "^4.8.2" }, "peerDependencies": { "tree-sitter": "^0.21.1" }, "optionalPeers": ["tree-sitter"] }, "sha512-/bnhbrTD9frUYHQTiYnPcxyHORIw157ERBa6dqzaKxvR/x3PC4Yzd+D1pZIMS6zNg2v3a8BZ0oK7jHqsQo9fWA=="],
-
-    "tree-sitter-typescript": ["tree-sitter-typescript@0.23.2", "", { "dependencies": { "node-addon-api": "^8.2.2", "node-gyp-build": "^4.8.2", "tree-sitter-javascript": "^0.23.1" }, "peerDependencies": { "tree-sitter": "^0.21.0" }, "optionalPeers": ["tree-sitter"] }, "sha512-e04JUUKxTT53/x3Uq1zIL45DoYKVfHH4CZqwgZhPg5qYROl5nQjV+85ruFzFGZxu+QeFVbRTPDRnqL9UbU4VeA=="],
+    "tree-sitter-bash": ["tree-sitter-bash@0.25.0", "", { "dependencies": { "node-addon-api": "^8.2.1", "node-gyp-build": "^4.8.2" }, "peerDependencies": { "tree-sitter": "^0.25.0" }, "optionalPeers": ["tree-sitter"] }, "sha512-gZtlj9+qFS81qKxpLfD6H0UssQ3QBc/F0nKkPsiFDyfQF2YBqYvglFJUzchrPpVhZe9kLZTrJ9n2J6lmka69Vg=="],
 
     "trim-lines": ["trim-lines@3.0.1", "", {}, "sha512-kRj8B+YHZCc9kQYdWfJB2/oUl9rA99qbowYYBtr4ui4mZyAQ2JpvVBd/6U2YloATfqBhBTSMhTpgBHtU0Mf3Rg=="],
 
@@ -3722,6 +3714,8 @@
 
     "@opencode-ai/web/shiki": ["shiki@3.4.2", "", { "dependencies": { "@shikijs/core": "3.4.2", "@shikijs/engine-javascript": "3.4.2", "@shikijs/engine-oniguruma": "3.4.2", "@shikijs/langs": "3.4.2", "@shikijs/themes": "3.4.2", "@shikijs/types": "3.4.2", "@shikijs/vscode-textmate": "^10.0.2", "@types/hast": "^3.0.4" } }, "sha512-wuxzZzQG8kvZndD7nustrNFIKYJ1jJoWIPaBpVe2+KHSvtzMi4SBjOxrigs8qeqce/l3U0cwiC+VAkLKSunHQQ=="],
 
+    "@opentui/core/web-tree-sitter": ["web-tree-sitter@0.26.0", "", {}, "sha512-wGGAMnJEMF8wy33iEGxSvnyEOfVLzSaa3x6g66aEHsL/hsgFb6IVPrpacIordAMz198pE9qReCEqFUuM0pnfwg=="],
+
     "@opentui/solid/@babel/core": ["@babel/core@7.28.0", "", { "dependencies": { "@ampproject/remapping": "^2.2.0", "@babel/code-frame": "^7.27.1", "@babel/generator": "^7.28.0", "@babel/helper-compilation-targets": "^7.27.2", "@babel/helper-module-transforms": "^7.27.3", "@babel/helpers": "^7.27.6", "@babel/parser": "^7.28.0", "@babel/template": "^7.27.2", "@babel/traverse": "^7.28.0", "@babel/types": "^7.28.0", "convert-source-map": "^2.0.0", "debug": "^4.1.0", "gensync": "^1.0.0-beta.2", "json5": "^2.2.3", "semver": "^6.3.1" } }, "sha512-UlLAnTPrFdNGoFtbSXwcGFQBtQZJCNjaN6hQNP3UPvuNXT1i82N26KL3dZeIpNalWywr9IuQuncaAfUaS1g6sQ=="],
 
     "@opentui/solid/babel-preset-solid": ["babel-preset-solid@1.9.9", "", { "dependencies": { "babel-plugin-jsx-dom-expressions": "^0.40.1" }, "peerDependencies": { "@babel/core": "^7.0.0", "solid-js": "^1.9.8" }, "optionalPeers": ["solid-js"] }, "sha512-pCnxWrciluXCeli/dj5PIEHgbNzim3evtTn12snjqqg8QZWJNMjH1AWIp4iG/tbVjqQ72aBEymMSagvmgxubXw=="],
@@ -4071,10 +4065,6 @@
     "tree-sitter/node-addon-api": ["node-addon-api@8.5.0", "", {}, "sha512-/bRZty2mXUIFY/xU5HLvveNHlswNJej+RnxBjOMkidWfwZzgTbPG1E3K5TOxRLOR+5hX7bSofy8yf1hZevMS8A=="],
 
     "tree-sitter-bash/node-addon-api": ["node-addon-api@8.5.0", "", {}, "sha512-/bRZty2mXUIFY/xU5HLvveNHlswNJej+RnxBjOMkidWfwZzgTbPG1E3K5TOxRLOR+5hX7bSofy8yf1hZevMS8A=="],
-
-    "tree-sitter-javascript/node-addon-api": ["node-addon-api@8.5.0", "", {}, "sha512-/bRZty2mXUIFY/xU5HLvveNHlswNJej+RnxBjOMkidWfwZzgTbPG1E3K5TOxRLOR+5hX7bSofy8yf1hZevMS8A=="],
-
-    "tree-sitter-typescript/node-addon-api": ["node-addon-api@8.5.0", "", {}, "sha512-/bRZty2mXUIFY/xU5HLvveNHlswNJej+RnxBjOMkidWfwZzgTbPG1E3K5TOxRLOR+5hX7bSofy8yf1hZevMS8A=="],
 
     "tw-to-css/postcss": ["postcss@8.4.31", "", { "dependencies": { "nanoid": "^3.3.6", "picocolors": "^1.0.0", "source-map-js": "^1.0.2" } }, "sha512-PS08Iboia9mts/2ygV3eLpY5ghnUcfLV/EXTOW1E2qYxJKGGBUtNjN76FYHnMs36RmARn41bC0AZmn+rR0OVpQ=="],
 

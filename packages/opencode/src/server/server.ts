@@ -1,6 +1,12 @@
 import { Log } from "../util/log"
 import { Bus } from "../bus"
-import { describeRoute, generateSpecs, validator, resolver, openAPIRouteHandler } from "hono-openapi"
+import {
+  describeRoute,
+  generateSpecs,
+  validator,
+  resolver,
+  openAPIRouteHandler,
+} from "hono-openapi"
 import { Hono } from "hono"
 import { cors } from "hono/cors"
 import { stream, streamSSE } from "hono/streaming"
@@ -35,7 +41,7 @@ import { InstanceBootstrap } from "../project/bootstrap"
 import { MCP } from "../mcp"
 import { Storage } from "../storage/storage"
 import type { ContentfulStatusCode } from "hono/utils/http-status"
-import { TuiEvent } from "@/cli/cmd/tui/event"
+import { type TuiEvent } from "@/cli/cmd/tui/event"
 import { Snapshot } from "@/snapshot"
 import { SessionSummary } from "@/session/summary"
 
@@ -249,7 +255,9 @@ export namespace Server {
               id: t.id,
               description: t.description,
               // Handle both Zod schemas and plain JSON schemas
-              parameters: (t.parameters as any)?._def ? zodToJsonSchema(t.parameters as any) : t.parameters,
+              parameters: (t.parameters as any)?._def
+                ? zodToJsonSchema(t.parameters as any)
+                : t.parameters,
             })),
           )
         },
@@ -1038,7 +1046,10 @@ export namespace Server {
           const providers = await Provider.list().then((x) => mapValues(x, (item) => item.info))
           return c.json({
             providers: Object.values(providers),
-            default: mapValues(providers, (item) => Provider.sort(Object.values(item.models))[0].id),
+            default: mapValues(
+              providers,
+              (item) => Provider.sort(Object.values(item.models))[0].id,
+            ),
           })
         },
       )
@@ -1579,7 +1590,10 @@ export namespace Server {
         ),
         async (c) => {
           const evt = c.req.valid("json")
-          await Bus.publish(Object.values(TuiEvent).find((def) => def.type === evt.type)!, evt.properties)
+          await Bus.publish(
+            Object.values(TuiEvent).find((def) => def.type === evt.type)!,
+            evt.properties,
+          )
           return c.json(true)
         },
       )

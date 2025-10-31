@@ -28,8 +28,5 @@ export const TuiEvent = {
       ]),
     }),
   ),
-  ToastShow: Bus.event(
-    "tui.toast.show",
-    ToastSchema,
-  ),
+  ToastShow: Bus.event("tui.toast.show", ToastSchema),
 }
