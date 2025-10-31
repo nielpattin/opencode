@@ -1817,6 +1817,12 @@ export namespace SessionPrompt {
             content: x,
           }),
         ),
+        {
+          role: "user" as const,
+          content: `
+              The following is the text to summarize:
+            `,
+        },
         ...MessageV2.toModelMessage([
           {
             info: {
