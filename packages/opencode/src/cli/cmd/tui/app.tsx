@@ -12,6 +12,7 @@ import { LocalProvider, useLocal } from "@tui/context/local"
 import { DialogModel } from "@tui/component/dialog-model"
 import { DialogStatus } from "@tui/component/dialog-status"
 import { DialogThemeList } from "@tui/component/dialog-theme-list"
+import { DialogHelp } from "./ui/dialog-help"
 import { CommandProvider, useCommandDialog } from "@tui/component/dialog-command"
 import { DialogAgent } from "@tui/component/dialog-agent"
 import { DialogSessionList } from "@tui/component/dialog-session-list"
@@ -204,6 +205,14 @@ function App() {
       value: "theme.switch",
       onSelect: () => {
         dialog.replace(() => <DialogThemeList />)
+      },
+      category: "System",
+    },
+    {
+      title: "Help",
+      value: "help.show",
+      onSelect: () => {
+        dialog.replace(() => <DialogHelp />)
       },
       category: "System",
     },

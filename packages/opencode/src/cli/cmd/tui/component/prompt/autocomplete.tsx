@@ -8,8 +8,6 @@ import { useSync } from "@tui/context/sync"
 import { useTheme } from "@tui/context/theme"
 import { SplitBorder } from "@tui/component/border"
 import { useCommandDialog } from "@tui/component/dialog-command"
-import { useDialog } from "@tui/ui/dialog"
-import { DialogHelp } from "@tui/ui/dialog-help"
 import type { PromptInfo } from "./history"
 
 export type AutocompleteRef = {
@@ -40,7 +38,6 @@ export function Autocomplete(props: {
   const sdk = useSDK()
   const sync = useSync()
   const command = useCommandDialog()
-  const dialog = useDialog()
   const { theme } = useTheme()
 
   const [store, setStore] = createStore({
@@ -251,7 +248,7 @@ export function Autocomplete(props: {
       {
         display: "/help",
         description: "show help",
-        onSelect: () => dialog.replace(() => <DialogHelp />),
+        onSelect: () => command.trigger("help.show"),
       },
     )
     const max = firstBy(results, [(x) => x.display.length, "desc"])?.display.length
