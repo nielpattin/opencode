@@ -15,7 +15,7 @@ import path from "path"
 import { useRouteData } from "@tui/context/route"
 import { useSync } from "@tui/context/sync"
 import { SplitBorder } from "@tui/component/border"
-import { SyntaxTheme, useTheme } from "@tui/context/theme"
+import { useTheme } from "@tui/context/theme"
 import { BoxRenderable, ScrollBoxRenderable, addDefaultParsers } from "@opentui/core"
 import { Prompt, type PromptRef } from "@tui/component/prompt"
 import type {
@@ -791,13 +791,14 @@ function ReasoningPart(props: { part: ReasoningPart; message: AssistantMessage }
 
 function TextPart(props: { part: TextPart; message: AssistantMessage }) {
   const ctx = use()
+  const { syntax } = useTheme()
   return (
     <Show when={props.part.text.trim()}>
       <box id={"text-" + props.part.id} paddingLeft={3} marginTop={1} flexShrink={0}>
         <code
           filetype="markdown"
           drawUnstyledText={false}
-          syntaxStyle={SyntaxTheme}
+          syntaxStyle={syntax()}
           content={props.part.text.trim()}
           conceal={ctx.conceal()}
         />
@@ -997,7 +998,7 @@ ToolRegistry.register<typeof WriteTool>({
   name: "write",
   container: "block",
   render(props) {
-    const { theme } = useTheme()
+    const { theme, syntax } = useTheme()
     const lines = createMemo(() => {
       return props.input.content?.split("\n") ?? []
     })
@@ -1028,7 +1029,7 @@ ToolRegistry.register<typeof WriteTool>({
           <box paddingLeft={1} flexGrow={1}>
             <code
               filetype={filetype(props.input.filePath!)}
-              syntaxStyle={SyntaxTheme}
+              syntaxStyle={syntax()}
               content={code()}
             />
           </box>
@@ -1131,7 +1132,7 @@ ToolRegistry.register<typeof EditTool>({
   container: "block",
   render(props) {
     const ctx = use()
-    const { theme } = useTheme()
+    const { theme, syntax } = useTheme()
 
     const style = createMemo(() => (ctx.width > 120 ? "split" : "stacked"))
 
@@ -1216,16 +1217,16 @@ ToolRegistry.register<typeof EditTool>({
           <Match when={diff() && style() === "split"}>
             <box paddingLeft={1} flexDirection="row" gap={2}>
               <box flexGrow={1} flexBasis={0}>
-                <code filetype={ft()} syntaxStyle={SyntaxTheme} content={diff()!.oldContent} />
+                <code filetype={ft()} syntaxStyle={syntax()} content={diff()!.oldContent} />
               </box>
               <box flexGrow={1} flexBasis={0}>
-                <code filetype={ft()} syntaxStyle={SyntaxTheme} content={diff()!.newContent} />
+                <code filetype={ft()} syntaxStyle={syntax()} content={diff()!.newContent} />
               </box>
             </box>
           </Match>
           <Match when={code()}>
             <box paddingLeft={1}>
-              <code filetype={ft()} syntaxStyle={SyntaxTheme} content={code()} />
+              <code filetype={ft()} syntaxStyle={syntax()} content={code()} />
             </box>
           </Match>
         </Switch>

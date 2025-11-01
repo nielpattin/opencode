@@ -172,7 +172,7 @@ function App() {
   const sync = useSync()
   const toast = useToast()
   const [sessionExists, setSessionExists] = createSignal(false)
-  const { theme } = useTheme()
+  const { theme, mode, setMode } = useTheme()
   const exit = useExit()
 
   useKeyboard(async (evt) => {
@@ -302,6 +302,14 @@ function App() {
       category: "System",
     },
     {
+      title: `Switch to ${mode() === "dark" ? "light" : "dark"} mode`,
+      value: "theme.switch_mode",
+      onSelect: () => {
+        setMode(mode() === "dark" ? "light" : "dark")
+      },
+      category: "System",
+    },
+    {
       title: "Help",
       value: "help.show",
       onSelect: () => {
@@ -398,7 +406,9 @@ function App() {
             paddingRight={1}
           >
             <text fg={theme.textMuted}>open</text>
-            <text attributes={TextAttributes.BOLD}>code </text>
+            <text fg={theme.text} attributes={TextAttributes.BOLD}>
+              code{" "}
+            </text>
             <text fg={theme.textMuted}>v{Installation.VERSION}</text>
           </box>
           <box paddingLeft={1} paddingRight={1}>
