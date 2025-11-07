@@ -1,6 +1,9 @@
 import { RequestError, type McpServer } from "@agentclientprotocol/sdk"
 import { Provider } from "../provider/provider"
 import type { ACPSessionState } from "./types"
+import { Log } from "@/util/log"
+
+const log = Log.create({ service: "acp-session-manager" })
 
 export class ACPSessionManager {
   private sessions = new Map<string, ACPSessionState>()
@@ -20,6 +23,7 @@ export class ACPSessionManager {
       createdAt: new Date(),
       model: resolvedModel,
     }
+    log.info("creating_session", { state })
 
     this.sessions.set(sessionId, state)
     return state
@@ -27,8 +31,10 @@ export class ACPSessionManager {
 
   get(sessionId: string) {
     const session = this.sessions.get(sessionId)
-    if (!session)
+    if (!session) {
+      log.error("session not found", { sessionId })
       throw RequestError.invalidParams(JSON.stringify({ error: `Session not found: ${sessionId}` }))
+    }
     return session
   }
 
