@@ -388,7 +388,7 @@ export namespace ACP {
     async newSession(params: NewSessionRequest) {
       const directory = params.cwd
       try {
-        const model = await defaultModel(this.config)
+        const model = await defaultModel(this.config, directory)
 
         // Store ACP session state
         const state = await this.sessionManager.create(params.cwd, params.mcpServers, model)
@@ -423,7 +423,7 @@ export namespace ACP {
 
     async loadSession(params: LoadSessionRequest) {
       const directory = params.cwd
-      const model = await defaultModel(this.config)
+      const model = await defaultModel(this.config, directory)
       const sessionId = params.sessionId
 
       const providers = await this.sdk.config
@@ -569,7 +569,7 @@ export namespace ACP {
       const directory = session.cwd
 
       const current = session.model
-      const model = current ?? (await defaultModel(this.config))
+      const model = current ?? (await defaultModel(this.config, directory))
       if (!current) {
         this.sessionManager.setModel(session.id, model)
       }
@@ -757,13 +757,13 @@ export namespace ACP {
     }
   }
 
-  async function defaultModel(config: ACPConfig) {
+  async function defaultModel(config: ACPConfig, cwd?: string) {
     const sdk = config.sdk
     const configured = config.defaultModel
     if (configured) return configured
 
     const model = await sdk.config
-      .get({ throwOnError: true })
+      .get({ throwOnError: true, query: { directory: cwd } })
       .then((resp) => {
         const cfg = resp.data
         if (!cfg.model) return undefined
