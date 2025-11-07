@@ -90,6 +90,13 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
   const selected = createMemo(() => flat()[store.selected])
 
   createEffect(() => {
+    const currentIndex = flat().findIndex((x) => isDeepEqual(x.value, props.current))
+    if (currentIndex >= 0 && store.filter === "") {
+      setStore("selected", currentIndex)
+    }
+  })
+
+  createEffect(() => {
     store.filter
     setStore("selected", 0)
     scroll.scrollTo(0)
