@@ -480,7 +480,7 @@ export namespace SessionPrompt {
     SessionCompaction.prune({ sessionID })
     for await (const item of MessageV2.stream(sessionID)) {
       if (item.info.role === "user") continue
-      const queued = state()[sessionID].callbacks
+      const queued = state()[sessionID]?.callbacks ?? []
       for (const q of queued) {
         q.resolve(item)
       }
