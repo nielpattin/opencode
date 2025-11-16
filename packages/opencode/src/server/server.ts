@@ -793,7 +793,14 @@ export namespace Server {
         async (c) => {
           const id = c.req.valid("param").id
           const body = c.req.valid("json")
-          await SessionCompaction.run({ ...body, sessionID: id })
+          await SessionCompaction.create({
+            sessionID: id,
+            model: {
+              providerID: body.providerID,
+              modelID: body.modelID,
+            },
+          })
+          await SessionPrompt.loop(id)
           return c.json(true)
         },
       )

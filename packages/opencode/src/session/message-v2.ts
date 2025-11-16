@@ -574,7 +574,7 @@ export namespace MessageV2 {
           if (part.type === "compaction") {
             userMessage.parts.push({
               type: "text",
-              text: "The user requested a compaction of the session.",
+              text: "What did we do so far?",
             })
           }
         }
@@ -695,7 +695,7 @@ export namespace MessageV2 {
         msg.parts.some((part) => part.type === "compaction")
       )
         break
-      if (msg.info.summary) break
+      if (msg.info.role === "assistant" && msg.info.summary && msg.info.finish) completed.add(msg.info.parentID)
     }
     result.reverse()
     return result

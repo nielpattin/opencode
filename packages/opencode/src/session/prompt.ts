@@ -271,7 +271,7 @@ export namespace SessionPrompt {
     return
   }
 
-  async function loop(sessionID: string) {
+  export const loop = fn(Identifier.schema("session"), async (sessionID) => {
     const abort = start(sessionID)
     if (!abort) {
       return new Promise<MessageV2.WithParts>((resolve, reject) => {
@@ -334,21 +334,9 @@ export namespace SessionPrompt {
         lastFinished.summary !== true &&
         SessionCompaction.isOverflow({ tokens: lastFinished.tokens, model: model.info })
       ) {
-        const msg = await Session.updateMessage({
-          id: Identifier.ascending("message"),
-          role: "user",
-          model: lastUser.model,
+        await SessionCompaction.create({
           sessionID,
-          agent: lastUser.agent,
-          time: {
-            created: Date.now(),
-          },
-        })
-        await Session.updatePart({
-          id: Identifier.ascending("part"),
-          messageID: msg.id,
-          sessionID: msg.sessionID,
-          type: "compaction",
+          model: lastUser.model,
         })
         continue
       }
@@ -534,7 +522,7 @@ export namespace SessionPrompt {
       return item
     }
     throw new Error("Impossible")
-  }
+  })
 
   async function checkOverflow(input: {
     sessionID: string

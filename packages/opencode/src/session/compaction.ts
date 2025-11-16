@@ -14,6 +14,7 @@ import { Token } from "../util/token"
 import { Log } from "../util/log"
 import { ProviderTransform } from "@/provider/transform"
 import { SessionProcessor } from "./processor"
+import { fn } from "@/util/fn"
 
 export namespace SessionCompaction {
   const log = Log.create({ service: "session.compaction" })
@@ -94,11 +95,7 @@ export namespace SessionCompaction {
     abort: AbortSignal
   }) {
     const model = await Provider.getModel(input.model.providerID, input.model.modelID)
-    const system = [
-      ...SystemPrompt.summarize(model.providerID),
-      ...(await SystemPrompt.environment()),
-      ...(await SystemPrompt.custom()),
-    ]
+    const system = [...SystemPrompt.summarize(model.providerID)]
     const msg = (await Session.updateMessage({
       id: Identifier.ascending("message"),
       role: "assistant",
@@ -185,4 +182,32 @@ export namespace SessionCompaction {
     }
     return "continue"
   }
+
+  export const create = fn(
+    z.object({
+      sessionID: Identifier.schema("session"),
+      model: z.object({
+        providerID: z.string(),
+        modelID: z.string(),
+      }),
+    }),
+    async (input) => {
+      const msg = await Session.updateMessage({
+        id: Identifier.ascending("message"),
+        role: "user",
+        model: input.model,
+        sessionID: input.sessionID,
+        agent: "build",
+        time: {
+          created: Date.now(),
+        },
+      })
+      await Session.updatePart({
+        id: Identifier.ascending("part"),
+        messageID: msg.id,
+        sessionID: msg.sessionID,
+        type: "compaction",
+      })
+    },
+  )
 }
