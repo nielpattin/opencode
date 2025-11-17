@@ -326,7 +326,7 @@ export namespace SessionPrompt {
       // pending subtask
       if (task?.type === "subtask") {
         const taskTool = await TaskTool.init()
-        const assistantMessage: MessageV2.Assistant = await Session.updateMessage({
+        const assistantMessage = (await Session.updateMessage({
           id: Identifier.ascending("message"),
           role: "assistant",
           parentID: lastUser.id,
@@ -348,8 +348,8 @@ export namespace SessionPrompt {
           time: {
             created: Date.now(),
           },
-        })
-        let part = await Session.updatePart({
+        })) as MessageV2.Assistant
+        let part = (await Session.updatePart({
           id: Identifier.ascending("part"),
           messageID: assistantMessage.id,
           sessionID: assistantMessage.sessionID,
@@ -367,7 +367,7 @@ export namespace SessionPrompt {
               start: Date.now(),
             },
           },
-        })
+        })) as MessageV2.ToolPart
         const result = await taskTool
           .execute(
             {
@@ -381,26 +381,18 @@ export namespace SessionPrompt {
               sessionID: sessionID,
               abort,
               async metadata(input) {
-                part = await Session.updatePart({
+                ;(await Session.updatePart({
                   ...part,
                   type: "tool",
                   state: {
-                    ...(part as any).state,
+                    ...part.state,
                     ...input,
-                  } as any,
-                } as any)
+                  },
+                })) as MessageV2.ToolPart
               },
             },
           )
           .catch(() => {})
-        await Session.updatePart({
-          ...part,
-          state: {
-            ...(part as any).state,
-            type: "completed",
-            ...result,
-          },
-        } as any)
         await Session.updateMessage({
           ...assistantMessage,
           role: "assistant",
@@ -408,7 +400,33 @@ export namespace SessionPrompt {
             ...assistantMessage.time,
             completed: Date.now(),
           },
+          finish: "tool-calls",
         })
+        if (result) {
+          await Session.updatePart({
+            ...part,
+            state: {
+              ...(part as any).state,
+              type: "completed",
+              ...result,
+            },
+          } as any)
+        }
+        if (!result) {
+          await Session.updatePart({
+            ...part,
+            state: {
+              status: "error",
+              error: "Tool execution failed",
+              time: {
+                start: part.state.status === "running" ? part.state.time.start : Date.now(),
+                end: Date.now(),
+              },
+              metadata: part.metadata,
+              input: part.state.input,
+            },
+          } satisfies MessageV2.ToolPart)
+        }
         continue
       }
 
