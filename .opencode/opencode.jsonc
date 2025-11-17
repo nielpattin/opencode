@@ -3,7 +3,9 @@
   "plugin": ["opencode-openai-codex-auth"],
   "provider": {
     "opencode": {
-      "options": {}
-    }
-  }
+      "options": {
+        // "baseURL": "http://localhost:8080"
+      },
+    },
+  },
 }

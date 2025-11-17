@@ -40,6 +40,7 @@ import { TuiEvent } from "@/cli/cmd/tui/event"
 import { Snapshot } from "@/snapshot"
 import { SessionSummary } from "@/session/summary"
 import { GlobalBus } from "@/bus/global"
+import { SessionStatus } from "@/session/status"
 
 const ERRORS = {
   400: {
@@ -376,7 +377,7 @@ export namespace Server {
               description: "Get session status",
               content: {
                 "application/json": {
-                  schema: resolver(z.record(z.string(), SessionPrompt.Status)),
+                  schema: resolver(z.record(z.string(), SessionStatus.Info)),
                 },
               },
             },
@@ -384,7 +385,7 @@ export namespace Server {
           },
         }),
         async (c) => {
-          const result = SessionPrompt.status()
+          const result = SessionStatus.list()
           return c.json(result)
         },
       )

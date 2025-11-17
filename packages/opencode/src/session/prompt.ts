@@ -28,9 +28,8 @@ import { Plugin } from "../plugin"
 
 import PROMPT_PLAN from "../session/prompt/plan.txt"
 import BUILD_SWITCH from "../session/prompt/build-switch.txt"
-import { ModelsDev } from "../provider/models"
 import { defer } from "../util/defer"
-import { mapValues, mergeDeep, pipe } from "remeda"
+import { mergeDeep, pipe } from "remeda"
 import { ToolRegistry } from "../tool/registry"
 import { Wildcard } from "../util/wildcard"
 import { MCP } from "../mcp"
@@ -48,39 +47,13 @@ import { NamedError } from "@/util/error"
 import { fn } from "@/util/fn"
 import { SessionProcessor } from "./processor"
 import { TaskTool } from "@/tool/task"
-import type { Message } from "vscode-jsonrpc"
+import { SessionStatus } from "./status"
 
 export namespace SessionPrompt {
   const log = Log.create({ service: "session.prompt" })
   export const OUTPUT_TOKEN_MAX = 32_000
 
-  export const Status = z
-    .union([
-      z.object({
-        type: z.literal("idle"),
-      }),
-      z.object({
-        type: z.literal("retry"),
-        attempt: z.number(),
-        message: z.string(),
-      }),
-      z.object({
-        type: z.literal("busy"),
-      }),
-    ])
-    .meta({
-      ref: "SessionStatus",
-    })
-  export type Status = z.infer<typeof Status>
-
   export const Event = {
-    Status: Bus.event(
-      "session.status",
-      z.object({
-        sessionID: z.string(),
-        status: Status,
-      }),
-    ),
     Idle: Bus.event(
       "session.idle",
       z.object({
@@ -95,7 +68,6 @@ export namespace SessionPrompt {
         string,
         {
           abort: AbortController
-          status: Status
           callbacks: {
             resolve(input: MessageV2.WithParts): void
             reject(): void
@@ -111,21 +83,9 @@ export namespace SessionPrompt {
     },
   )
 
-  export function status() {
-    return mapValues(state(), (item) => item.status)
-  }
-
-  export function getStatus(sessionID: string) {
-    return (
-      state()[sessionID]?.status ?? {
-        type: "idle",
-      }
-    )
-  }
-
   export function assertNotBusy(sessionID: string) {
-    const status = getStatus(sessionID)
-    if (status?.type !== "idle") throw new Session.BusyError(sessionID)
+    const match = state()[sessionID]
+    if (match) throw new Session.BusyError(sessionID)
   }
 
   export const PromptInput = z.object({
@@ -252,13 +212,8 @@ export namespace SessionPrompt {
     const controller = new AbortController()
     s[sessionID] = {
       abort: controller,
-      status: { type: "busy" },
       callbacks: [],
     }
-    Bus.publish(Event.Status, {
-      sessionID,
-      status: s[sessionID].status,
-    })
     return controller.signal
   }
 
@@ -272,10 +227,7 @@ export namespace SessionPrompt {
       item.reject()
     }
     delete s[sessionID]
-    Bus.publish(Event.Status, {
-      sessionID,
-      status: { type: "idle" },
-    })
+    SessionStatus.set(sessionID, { type: "idle" })
     return
   }
 

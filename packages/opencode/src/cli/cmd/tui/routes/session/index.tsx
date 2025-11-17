@@ -20,21 +20,12 @@ import { useTheme } from "@tui/context/theme"
 import {
   BoxRenderable,
   ScrollBoxRenderable,
-  TextAttributes,
   addDefaultParsers,
   MacOSScrollAccel,
   type ScrollAcceleration,
 } from "@opentui/core"
 import { Prompt, type PromptRef } from "@tui/component/prompt"
-import type {
-  AssistantMessage,
-  Part,
-  ToolPart,
-  UserMessage,
-  TextPart,
-  ReasoningPart,
-  CompactionPart,
-} from "@opencode-ai/sdk"
+import type { AssistantMessage, Part, ToolPart, UserMessage, TextPart, ReasoningPart } from "@opencode-ai/sdk"
 import { useLocal } from "@tui/context/local"
 import { Locale } from "@/util/locale"
 import type { Tool } from "@/tool/tool"
@@ -674,13 +665,6 @@ export function Session() {
   // snap to bottom when session changes
   createEffect(on(() => route.sessionID, toBottom))
 
-  const status = createMemo(
-    () =>
-      sync.data.session_status[route.sessionID] ?? {
-        type: "idle",
-      },
-  )
-
   return (
     <context.Provider
       value={{
@@ -820,7 +804,7 @@ export function Session() {
                     </Match>
                     <Match when={message.role === "assistant"}>
                       <AssistantMessage
-                        last={index() === messages().length - 1}
+                        last={pending() === message.id}
                         message={message as AssistantMessage}
                         parts={sync.data.part[message.id] ?? []}
                       />
@@ -829,17 +813,6 @@ export function Session() {
                 )}
               </For>
             </scrollbox>
-            <Show when={status().type !== "idle"}>
-              <box flexDirection="row" gap={1} flexShrink={0}>
-                <text fg={local.agent.color(lastUserMessage().agent)}>{Locale.titlecase(lastUserMessage().agent)}</text>
-                <Shimmer text={lastUserMessage().model.modelID} color={theme.text} />
-                <Show when={status().type === "retry"}>
-                  <text fg={theme.error}>
-                    {(status() as any).message} [retry #{(status() as any).attempt}]
-                  </text>
-                </Show>
-              </box>
-            </Show>
             <box flexShrink={0}>
               <Prompt
                 ref={(r) => (prompt = r)}
@@ -957,6 +930,13 @@ function UserMessage(props: {
 function AssistantMessage(props: { message: AssistantMessage; parts: Part[]; last: boolean }) {
   const local = useLocal()
   const { theme } = useTheme()
+  const sync = useSync()
+  const status = createMemo(
+    () =>
+      sync.data.session_status[props.message.sessionID] ?? {
+        type: "idle",
+      },
+  )
   return (
     <>
       <For each={props.parts}>
@@ -974,9 +954,7 @@ function AssistantMessage(props: { message: AssistantMessage; parts: Part[]; las
           )
         }}
       </For>
-      <Show
-        when={props.message.error && (props.message.error.name !== "APIError" || !props.message.error.data.isRetryable)}
-      >
+      <Show when={props.message.error}>
         <box
           border={["left"]}
           paddingTop={1}
@@ -988,6 +966,17 @@ function AssistantMessage(props: { message: AssistantMessage; parts: Part[]; las
           borderColor={theme.error}
         >
           <text fg={theme.textMuted}>{props.message.error?.data.message}</text>
+        </box>
+      </Show>
+      <Show when={props.last && status().type !== "idle"}>
+        <box paddingLeft={3} flexDirection="row" gap={1} marginTop={1}>
+          <text fg={local.agent.color(props.message.mode)}>{Locale.titlecase(props.message.mode)}</text>
+          <Shimmer text={props.message.modelID} color={theme.text} />
+          <Show when={status().type === "retry"}>
+            <text fg={theme.error}>
+              {(status() as any).message} [attempt #{(status() as any).attempt}]
+            </text>
+          </Show>
         </box>
       </Show>
       <Show

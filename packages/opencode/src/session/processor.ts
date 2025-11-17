@@ -10,6 +10,7 @@ import { Snapshot } from "@/snapshot"
 import { SessionSummary } from "./summary"
 import { Bus } from "@/bus"
 import { SessionRetry } from "./retry"
+import { SessionStatus } from "./status"
 
 export namespace SessionProcessor {
   const DOOM_LOOP_THRESHOLD = 3
@@ -49,6 +50,7 @@ export namespace SessionProcessor {
               input.abort.throwIfAborted()
               switch (value.type) {
                 case "start":
+                  SessionStatus.set(input.sessionID, { type: "busy" })
                   break
 
                 case "reasoning-start":
@@ -325,7 +327,12 @@ export namespace SessionProcessor {
               attempt++
               const delay = SessionRetry.getRetryDelayInMs(error, attempt)
               if (delay) {
-                await SessionRetry.sleep(delay, input.abort)
+                SessionStatus.set(input.sessionID, {
+                  type: "retry",
+                  attempt,
+                  message: error.data.message,
+                })
+                await SessionRetry.sleep(delay, input.abort).catch(() => {})
                 continue
               }
             }
