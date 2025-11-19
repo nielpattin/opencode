@@ -425,6 +425,7 @@ export function Prompt(props: PromptProps) {
         },
         body: {
           agent: local.agent.current().name,
+          model: `${local.model.current().providerID}/${local.model.current().modelID}`,
           command: inputText,
         },
       })
