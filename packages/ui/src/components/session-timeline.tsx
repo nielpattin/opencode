@@ -67,7 +67,11 @@ export function SessionTimeline(props: { sessionID: string; expanded?: boolean }
                   >
                     <div data-slot="session-timeline-tick-line" />
                   </button>
-                  <button data-slot="session-timeline-message-button" data-expanded={props.expanded} onClick={handleClick}>
+                  <button
+                    data-slot="session-timeline-message-button"
+                    data-expanded={props.expanded}
+                    onClick={handleClick}
+                  >
                     <Switch>
                       <Match when={messageWorking()}>
                         <Spinner class="spinner" />
@@ -76,7 +80,10 @@ export function SessionTimeline(props: { sessionID: string; expanded?: boolean }
                         <DiffChanges changes={message.summary?.diffs ?? []} variant="bars" />
                       </Match>
                     </Switch>
-                    <div data-slot="session-timeline-message-title-preview" data-active={activeMessage()?.id === message.id}>
+                    <div
+                      data-slot="session-timeline-message-title-preview"
+                      data-active={activeMessage()?.id === message.id}
+                    >
                       <Show when={message.summary?.title} fallback="New message">
                         {message.summary?.title}
                       </Show>
@@ -177,10 +184,15 @@ export function SessionTimeline(props: { sessionID: string; expanded?: boolean }
                                 <Accordion.Trigger>
                                   <div data-slot="session-timeline-accordion-trigger-content">
                                     <div data-slot="session-timeline-file-info">
-                                      <FileIcon node={{ path: diff.file, type: "file" }} data-slot="session-timeline-file-icon" />
+                                      <FileIcon
+                                        node={{ path: diff.file, type: "file" }}
+                                        data-slot="session-timeline-file-icon"
+                                      />
                                       <div data-slot="session-timeline-file-path">
                                         <Show when={diff.file.includes("/")}>
-                                          <span data-slot="session-timeline-directory">{getDirectory(diff.file)}&lrm;</span>
+                                          <span data-slot="session-timeline-directory">
+                                            {getDirectory(diff.file)}&lrm;
+                                          </span>
                                         </Show>
                                         <span data-slot="session-timeline-filename">{getFilename(diff.file)}</span>
                                       </div>
