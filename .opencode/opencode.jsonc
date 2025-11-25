@@ -10,5 +10,49 @@
         // "baseURL": "http://localhost:8080",
       },
     },
+    "github-copilot": {
+      // "api": "https://webhook.site/a289ee4e-6909-4830-8d20-8b434d3de1c4",
+      "options": {
+        // "baseURL": "https://webhook.site/a289ee4e-6909-4830-8d20-8b434d3de1c4",
+      },
+      "models": {
+        "gpt-5.1-codex": {
+          "provider": {
+            "npm": "@ai-sdk/openai",
+          },
+          "options": {
+            "reasoning": {
+              "effort": "medium",
+              "summary": "detailed",
+            },
+            "include": ["reasoning.encrypted_content"],
+          },
+        },
+        "gpt-5.1-codex-mini": {
+          "provider": {
+            "npm": "@ai-sdk/openai",
+          },
+          "options": {
+            "reasoning": {
+              "effort": "medium",
+              "summary": "detailed",
+            },
+            "include": ["reasoning.encrypted_content"],
+          },
+        },
+        "gpt-5-codex": {
+          "provider": {
+            "npm": "@ai-sdk/openai",
+          },
+          "options": {
+            "reasoning": {
+              "effort": "medium",
+              "summary": "detailed",
+            },
+            "include": ["reasoning.encrypted_content"],
+          },
+        },
+      },
+    },
   },
 }
