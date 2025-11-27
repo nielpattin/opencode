@@ -5,8 +5,8 @@ import { pipe, sumBy } from "remeda"
 import { useTheme } from "@tui/context/theme"
 import { SplitBorder, EmptyBorder } from "@tui/component/border"
 import type { AssistantMessage, Session } from "@opencode-ai/sdk"
-import { Global } from "@/global"
 import { useDirectory } from "../../context/directory"
+import { useKeybind } from "../../context/keybind"
 
 const Title = (props: { session: Accessor<Session> }) => {
   const { theme } = useTheme()
@@ -60,105 +60,65 @@ export function Header() {
   })
 
   const { theme } = useTheme()
-
-  const mcp = createMemo(() => Object.keys(sync.data.mcp))
-  const mcpError = createMemo(() => Object.values(sync.data.mcp).some((x) => x.status === "failed"))
-  const lsp = createMemo(() => Object.keys(sync.data.lsp))
-  const directory = useDirectory()
+  const keybind = useKeybind()
 
   return (
     <box flexShrink={0}>
-      <box flexDirection="row" justifyContent="space-between" gap={1}>
-        <text fg={theme.textMuted}>{directory()}</text>
-        <box gap={2} flexDirection="row" flexShrink={0}>
-          <text fg={theme.text}>
-            <span style={{ fg: theme.success }}>•</span> {lsp().length} LSP
-          </text>
-          <Show when={mcp().length}>
-            <text fg={theme.text}>
-              <Switch>
-                <Match when={mcpError()}>
-                  <span style={{ fg: theme.error }}>⊙ </span>
-                </Match>
-                <Match when={true}>
-                  <span style={{ fg: theme.success }}>⊙ </span>
-                </Match>
-              </Switch>
-              {mcp().length} MCP
-            </text>
-          </Show>
-          <text fg={theme.textMuted}>/status</text>
-        </box>
-      </box>
       <box
-        height={1}
-        border={["bottom"]}
-        borderColor={theme.backgroundPanel}
-        customBorderChars={
-          theme.background.a != 0
-            ? {
-                ...EmptyBorder,
-                horizontal: "▄",
-              }
-            : {
-                ...EmptyBorder,
-                horizontal: " ",
-              }
-        }
-      />
-      <box
+        paddingTop={1}
+        paddingBottom={1}
         paddingLeft={2}
         paddingRight={1}
         {...SplitBorder}
-        borderColor={theme.backgroundPanel}
+        border={["left"]}
+        borderColor={theme.border}
         flexShrink={0}
         backgroundColor={theme.backgroundPanel}
       >
-        <Show
-          when={shareEnabled()}
-          fallback={
+        <Switch>
+          <Match when={session()?.parentID}>
+            <box flexDirection="row" gap={2}>
+              <text fg={theme.text}>
+                <b>Subagent session</b>
+              </text>
+              <text fg={theme.text}>
+                Prev <span style={{ fg: theme.textMuted }}>{keybind.print("session_child_cycle_reverse")}</span>
+              </text>
+              <text fg={theme.text}>
+                Next <span style={{ fg: theme.textMuted }}>{keybind.print("session_child_cycle")}</span>
+              </text>
+              <box flexGrow={1} flexShrink={1} />
+              <ContextInfo context={context} cost={cost} />
+            </box>
+          </Match>
+          <Match when={!shareEnabled()}>
             <box flexDirection="row" justifyContent="space-between" gap={1}>
               <Title session={session} />
               <ContextInfo context={context} cost={cost} />
             </box>
-          }
-        >
-          <Title session={session} />
-          <box flexDirection="row" justifyContent="space-between" gap={1}>
-            <box flexGrow={1} flexShrink={1}>
-              <Switch>
-                <Match when={session().share?.url}>
-                  <text fg={theme.textMuted} wrapMode="word">
-                    {session().share!.url}
-                  </text>
-                </Match>
-                <Match when={true}>
-                  <text fg={theme.text} wrapMode="word">
-                    /share <span style={{ fg: theme.textMuted }}>to create a shareable link</span>
-                  </text>
-                </Match>
-              </Switch>
+          </Match>
+          <Match when={true}>
+            <Title session={session} />
+            <box flexDirection="row" justifyContent="space-between" gap={1}>
+              <box flexGrow={1} flexShrink={1}>
+                <Switch>
+                  <Match when={session().share?.url}>
+                    <text fg={theme.textMuted} wrapMode="word">
+                      {session().share!.url}
+                    </text>
+                  </Match>
+                  <Match when={true}>
+                    <text fg={theme.text} wrapMode="word">
+                      /share <span style={{ fg: theme.textMuted }}>to create a shareable link</span>
+                    </text>
+                  </Match>
+                </Switch>
+              </box>
+              <ContextInfo context={context} cost={cost} />
             </box>
-            <ContextInfo context={context} cost={cost} />
-          </box>
-        </Show>
+          </Match>
+        </Switch>
       </box>
-      <box
-        height={1}
-        border={["bottom"]}
-        borderColor={theme.backgroundPanel}
-        customBorderChars={
-          theme.background.a != 0
-            ? {
-                ...EmptyBorder,
-                horizontal: "▀",
-              }
-            : {
-                ...EmptyBorder,
-                horizontal: " ",
-              }
-        }
-      />
     </box>
   )
 }
