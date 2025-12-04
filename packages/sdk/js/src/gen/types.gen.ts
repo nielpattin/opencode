@@ -2704,7 +2704,7 @@ export type ProviderListResponses = {
           reasoning: boolean
           temperature: boolean
           tool_call: boolean
-          cost: {
+          cost?: {
             input: number
             output: number
             cache_read?: number
