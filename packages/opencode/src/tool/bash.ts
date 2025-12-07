@@ -181,7 +181,7 @@ export const BashTool = Tool.define("bash", async () => {
                   ? resolved.replace(/^\/([a-z])\//, (_, drive) => `${drive.toUpperCase()}:\\`).replace(/\//g, "\\")
                   : resolved
 
-              await checkExternalDirectory(path.dirname(normalized))
+              await checkExternalDirectory(normalized)
             }
           }
         }
