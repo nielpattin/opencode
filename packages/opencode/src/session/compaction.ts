@@ -1,4 +1,3 @@
-import { wrapLanguageModel, type ModelMessage } from "ai"
 import { Session } from "."
 import { Identifier } from "../id/id"
 import { Instance } from "../project/instance"
@@ -12,10 +11,9 @@ import { Flag } from "../flag/flag"
 import { Token } from "../util/token"
 import { Config } from "../config/config"
 import { Log } from "../util/log"
-import { ProviderTransform } from "@/provider/transform"
 import { SessionProcessor } from "./processor"
 import { fn } from "@/util/fn"
-import { mergeDeep, pipe } from "remeda"
+import { Agent } from "@/agent/agent"
 
 export namespace SessionCompaction {
   const log = Log.create({ service: "session.compaction" })
@@ -97,9 +95,7 @@ export namespace SessionCompaction {
     abort: AbortSignal
     auto: boolean
   }) {
-    const cfg = await Config.get()
     const model = await Provider.getModel(input.model.providerID, input.model.modelID)
-    const language = await Provider.getLanguage(model)
     const system = [...SystemPrompt.compaction(model.providerID)]
     const msg = (await Session.updateMessage({
       id: Identifier.ascending("message"),
@@ -131,44 +127,16 @@ export namespace SessionCompaction {
       model: model,
       abort: input.abort,
     })
+    const agent = await Agent.get(input.agent)
     const result = await processor.process({
-      onError(error) {
-        log.error("stream error", {
-          error,
-        })
-      },
-      // set to 0, we handle loop
-      maxRetries: 0,
-      providerOptions: ProviderTransform.providerOptions(
-        model.api.npm,
-        model.providerID,
-        pipe({}, mergeDeep(ProviderTransform.options(model, input.sessionID)), mergeDeep(model.options)),
-      ),
-      headers: model.headers,
-      abortSignal: input.abort,
-      tools: model.capabilities.toolcall ? {} : undefined,
+      requestID: input.parentID,
+      agent,
+      abort: input.abort,
+      sessionID: input.sessionID,
+      tools: {},
+      system,
       messages: [
-        ...system.map(
-          (x): ModelMessage => ({
-            role: "system",
-            content: x,
-          }),
-        ),
-        ...MessageV2.toModelMessage(
-          input.messages.filter((m) => {
-            if (m.info.role !== "assistant" || m.info.error === undefined) {
-              return true
-            }
-            if (
-              MessageV2.AbortedError.isInstance(m.info.error) &&
-              m.parts.some((part) => part.type !== "step-start" && part.type !== "reasoning")
-            ) {
-              return true
-            }
-
-            return false
-          }),
-        ),
+        ...MessageV2.toModelMessage(input.messages),
         {
           role: "user",
           content: [
@@ -179,22 +147,9 @@ export namespace SessionCompaction {
           ],
         },
       ],
-      model: wrapLanguageModel({
-        model: language,
-        middleware: [
-          {
-            async transformParams(args) {
-              if (args.type === "stream") {
-                // @ts-expect-error
-                args.params.prompt = ProviderTransform.message(args.params.prompt, model)
-              }
-              return args.params
-            },
-          },
-        ],
-      }),
-      experimental_telemetry: { isEnabled: cfg.experimental?.openTelemetry },
+      model,
     })
+
     if (result === "continue" && input.auto) {
       const continueMsg = await Session.updateMessage({
         id: Identifier.ascending("message"),

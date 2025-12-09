@@ -516,54 +516,6 @@ export namespace SessionPrompt {
       }
 
       const result = await processor.process({
-        onError(error) {
-          log.error("stream error", {
-            error,
-          })
-        },
-        async experimental_repairToolCall(input) {
-          const lower = input.toolCall.toolName.toLowerCase()
-          if (lower !== input.toolCall.toolName && tools[lower]) {
-            log.info("repairing tool call", {
-              tool: input.toolCall.toolName,
-              repaired: lower,
-            })
-            return {
-              ...input.toolCall,
-              toolName: lower,
-            }
-          }
-          return {
-            ...input.toolCall,
-            input: JSON.stringify({
-              tool: input.toolCall.toolName,
-              error: input.error.message,
-            }),
-            toolName: "invalid",
-          }
-        },
-        headers: {
-          ...(model.providerID.startsWith("opencode")
-            ? {
-                "x-opencode-project": Instance.project.id,
-                "x-opencode-session": sessionID,
-                "x-opencode-request": lastUser.id,
-              }
-            : undefined),
-          ...model.headers,
-        },
-        // set to 0, we handle loop
-        maxRetries: 0,
-        activeTools: Object.keys(tools).filter((x) => x !== "invalid"),
-        maxOutputTokens: ProviderTransform.maxOutputTokens(
-          model.api.npm,
-          params.options,
-          model.limit.output,
-          OUTPUT_TOKEN_MAX,
-        ),
-        abortSignal: abort,
-        providerOptions: ProviderTransform.providerOptions(model.api.npm, model.providerID, params.options),
-        stopWhen: stepCountIs(1),
         temperature: params.temperature,
         topP: params.topP,
         toolChoice: isLastStep ? "none" : undefined,
@@ -692,6 +644,7 @@ export namespace SessionPrompt {
       mergeDeep(await ToolRegistry.enabled(input.agent)),
       mergeDeep(input.tools ?? {}),
     )
+
     for (const item of await ToolRegistry.tools(input.model.providerID)) {
       if (Wildcard.all(item.id, enabledTools) === false) continue
       const schema = ProviderTransform.schema(input.model, z.toJSONSchema(item.parameters))

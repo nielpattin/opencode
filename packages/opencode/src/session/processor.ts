@@ -12,6 +12,7 @@ import { SessionRetry } from "./retry"
 import { SessionStatus } from "./status"
 import { Plugin } from "@/plugin"
 import type { Provider } from "@/provider/provider"
+import { LLM } from "./llm"
 
 export namespace SessionProcessor {
   const DOOM_LOOP_THRESHOLD = 3
@@ -47,13 +48,13 @@ export namespace SessionProcessor {
       partFromToolCall(toolCallID: string) {
         return toolcalls[toolCallID]
       },
-      async process(streamInput: StreamInput) {
+      async process(streamInput: LLM.StreamInput) {
         log.info("process")
         while (true) {
           try {
             let currentText: MessageV2.TextPart | undefined
             let reasoningMap: Record<string, MessageV2.ReasoningPart> = {}
-            const stream = streamText(streamInput)
+            const stream = await LLM.stream(streamInput)
 
             for await (const value of stream.fullStream) {
               input.abort.throwIfAborted()
