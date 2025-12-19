@@ -410,6 +410,8 @@ export namespace Config {
       doom_loop: PermissionAction.optional(),
     })
     .catchall(PermissionRule)
+    .or(PermissionAction)
+    .transform((x) => (typeof x === "string" ? { "*": x } : x))
     .meta({
       ref: "PermissionConfig",
     })

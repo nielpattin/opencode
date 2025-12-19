@@ -5,9 +5,7 @@
   //   "url": "https://enterprise.dev.opencode.ai",
   // },
   "instructions": ["STYLE_GUIDE.md"],
-  "permission": {
-    "*": "ask",
-  },
+  // "permission": "deny",
   "provider": {
     "opencode": {
       "options": {},

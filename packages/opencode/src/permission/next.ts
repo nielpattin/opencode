@@ -6,7 +6,6 @@ import { Instance } from "@/project/instance"
 import { fn } from "@/util/fn"
 import { Log } from "@/util/log"
 import { Wildcard } from "@/util/wildcard"
-import { sortBy } from "remeda"
 import z from "zod"
 
 export namespace PermissionNext {
@@ -19,6 +18,7 @@ export namespace PermissionNext {
 
   export const Rule = z
     .object({
+      permission: z.string(),
       pattern: z.string(),
       action: Action,
     })
@@ -27,40 +27,29 @@ export namespace PermissionNext {
     })
   export type Rule = z.infer<typeof Rule>
 
-  export const Ruleset = z.record(z.string(), Rule.array()).meta({
+  export const Ruleset = Rule.array().meta({
     ref: "PermissionRuleset",
   })
   export type Ruleset = z.infer<typeof Ruleset>
 
   export function fromConfig(permission: Config.Permission) {
-    const ruleset: Ruleset = {}
+    const ruleset: Ruleset = []
     for (const [key, value] of Object.entries(permission)) {
       if (typeof value === "string") {
-        ruleset[key] = [
-          {
-            action: value,
-            pattern: "*",
-          },
-        ]
+        ruleset.push({
+          permission: key,
+          action: value,
+          pattern: "*",
+        })
         continue
       }
-      ruleset[key] = Object.entries(value).map(([pattern, action]) => ({ pattern, action }))
+      ruleset.push(...Object.entries(value).map(([pattern, action]) => ({ permission: key, pattern, action })))
     }
     return ruleset
   }
 
   export function merge(...rulesets: Ruleset[]): Ruleset {
-    const result: Ruleset = {}
-    for (const ruleset of rulesets) {
-      for (const [permission, rules] of Object.entries(ruleset)) {
-        if (!result[permission]) {
-          result[permission] = rules
-          continue
-        }
-        result[permission] = result[permission].concat(rules)
-      }
-    }
-    return result as Ruleset
+    return rulesets.flat()
   }
 
   export const Request = z
@@ -205,20 +194,15 @@ export namespace PermissionNext {
 
   export function evaluate(permission: string, pattern: string, ruleset: Ruleset): Action {
     log.info("evaluate", { permission, pattern, ruleset })
-    const rules: Rule[] = []
-    const entries = sortBy(Object.entries(ruleset), ([k]) => k.length)
-    for (const [permPattern, permRules] of entries) {
-      if (Wildcard.match(permission, permPattern)) {
-        rules.push(...permRules)
-      }
-    }
-    const match = rules.findLast((rule) => Wildcard.match(pattern, rule.pattern))
+    const match = ruleset.findLast(
+      (rule) => Wildcard.match(permission, rule.permission) && Wildcard.match(pattern, rule.pattern),
+    )
     return match?.action ?? "ask"
   }
 
   const EDIT_TOOLS = ["edit", "write", "patch", "multiedit"]
 
-  export function disabledTools(tools: string[], ruleset: Ruleset): Set<string> {
+  export function disabled(tools: string[], ruleset: Ruleset): Set<string> {
     const disabled = new Set<string>()
     for (const tool of tools) {
       const permission = EDIT_TOOLS.includes(tool) ? "edit" : tool
