@@ -67,6 +67,7 @@ import { Footer } from "./footer.tsx"
 import { usePromptRef } from "../../context/prompt"
 import { Filesystem } from "@/util/filesystem"
 import { DialogSubagent } from "./dialog-subagent.tsx"
+import { PermissionPrompt } from "./permission"
 
 addDefaultParsers(parsers.parsers)
 
@@ -87,7 +88,6 @@ const context = createContext<{
   showTimestamps: () => boolean
   usernameVisible: () => boolean
   showDetails: () => boolean
-  userMessageMarkdown: () => boolean
   diffWrapMode: () => "word" | "none"
   sync: ReturnType<typeof useSync>
 }>()
@@ -125,7 +125,6 @@ export function Session() {
   const [usernameVisible, setUsernameVisible] = createSignal(kv.get("username_visible", true))
   const [showDetails, setShowDetails] = createSignal(kv.get("tool_details_visibility", true))
   const [showScrollbar, setShowScrollbar] = createSignal(kv.get("scrollbar_visible", false))
-  const [userMessageMarkdown, setUserMessageMarkdown] = createSignal(kv.get("user_message_markdown", true))
   const [diffWrapMode, setDiffWrapMode] = createSignal<"word" | "none">("word")
 
   const wide = createMemo(() => dimensions().width > 120)
@@ -525,19 +524,6 @@ export function Session() {
       },
     },
     {
-      title: userMessageMarkdown() ? "Disable user message markdown" : "Enable user message markdown",
-      value: "session.toggle.user_message_markdown",
-      category: "Session",
-      onSelect: (dialog) => {
-        setUserMessageMarkdown((prev) => {
-          const next = !prev
-          kv.set("user_message_markdown", next)
-          return next
-        })
-        dialog.clear()
-      },
-    },
-    {
       title: "Page up",
       value: "session.page.up",
       keybind: "messages_page_up",
@@ -874,7 +860,6 @@ export function Session() {
         showTimestamps,
         usernameVisible,
         showDetails,
-        userMessageMarkdown,
         diffWrapMode,
         sync,
       }}
@@ -1000,17 +985,24 @@ export function Session() {
               </For>
             </scrollbox>
             <box flexShrink={0}>
-              <Prompt
-                ref={(r) => {
-                  prompt = r
-                  promptRef.set(r)
-                }}
-                disabled={permissions().length > 0}
-                onSubmit={() => {
-                  toBottom()
-                }}
-                sessionID={route.sessionID}
-              />
+              <Switch>
+                <Match when={permissions().length > 0}>
+                  <PermissionPrompt request={permissions()[0]} />
+                </Match>
+                <Match when={true}>
+                  <Prompt
+                    ref={(r) => {
+                      prompt = r
+                      promptRef.set(r)
+                    }}
+                    disabled={permissions().length > 0}
+                    onSubmit={() => {
+                      toBottom()
+                    }}
+                    sessionID={route.sessionID}
+                  />
+                </Match>
+              </Switch>
             </box>
             <Show when={!sidebarVisible()}>
               <Footer />
@@ -1048,7 +1040,7 @@ function UserMessage(props: {
   const text = createMemo(() => props.parts.flatMap((x) => (x.type === "text" && !x.synthetic ? [x] : []))[0])
   const files = createMemo(() => props.parts.flatMap((x) => (x.type === "file" ? [x] : [])))
   const sync = useSync()
-  const { theme, syntax } = useTheme()
+  const { theme } = useTheme()
   const [hover, setHover] = createSignal(false)
   const queued = createMemo(() => props.pending && props.message.id > props.pending)
   const color = createMemo(() => (queued() ? theme.accent : local.agent.color(props.message.agent)))
@@ -1079,22 +1071,7 @@ function UserMessage(props: {
             backgroundColor={hover() ? theme.backgroundElement : theme.backgroundPanel}
             flexShrink={0}
           >
-            <Switch>
-              <Match when={ctx.userMessageMarkdown()}>
-                <code
-                  filetype="markdown"
-                  drawUnstyledText={false}
-                  streaming={false}
-                  syntaxStyle={syntax()}
-                  content={text()?.text ?? ""}
-                  conceal={ctx.conceal()}
-                  fg={theme.text}
-                />
-              </Match>
-              <Match when={!ctx.userMessageMarkdown()}>
-                <text fg={theme.text}>{text()?.text}</text>
-              </Match>
-            </Switch>
+            <text fg={theme.text}>{text()?.text}</text>
             <Show when={files().length}>
               <box flexDirection="row" paddingBottom={1} paddingTop={1} gap={1} flexWrap="wrap">
                 <For each={files()}>
