@@ -450,18 +450,27 @@ export type EventMessagePartRemoved = {
 export type PermissionRequest = {
   id: string
   sessionID: string
+  permission: string
   patterns: Array<string>
   message: string
   metadata: {
     [key: string]: unknown
   }
   always: Array<string>
-  permission: string
 }
 
-export type EventPermissionRequested = {
-  type: "permission.requested"
+export type EventPermissionNextAsked = {
+  type: "permission.next.asked"
   properties: PermissionRequest
+}
+
+export type EventPermissionNextReplied = {
+  type: "permission.next.replied"
+  properties: {
+    sessionID: string
+    requestID: string
+    reply: "once" | "always" | "reject"
+  }
 }
 
 export type Permission = {
@@ -762,7 +771,8 @@ export type Event =
   | EventMessageRemoved
   | EventMessagePartUpdated
   | EventMessagePartRemoved
-  | EventPermissionRequested
+  | EventPermissionNextAsked
+  | EventPermissionNextReplied
   | EventPermissionUpdated
   | EventPermissionReplied
   | EventSessionStatus
@@ -1150,23 +1160,25 @@ export type PermissionObjectConfig = {
 
 export type PermissionRuleConfig = PermissionActionConfig | PermissionObjectConfig
 
-export type PermissionConfig = {
-  read?: PermissionRuleConfig
-  edit?: PermissionRuleConfig
-  glob?: PermissionRuleConfig
-  grep?: PermissionRuleConfig
-  list?: PermissionRuleConfig
-  bash?: PermissionRuleConfig
-  task?: PermissionRuleConfig
-  external_directory?: PermissionRuleConfig
-  todowrite?: PermissionActionConfig
-  todoread?: PermissionActionConfig
-  webfetch?: PermissionActionConfig
-  websearch?: PermissionActionConfig
-  codesearch?: PermissionActionConfig
-  doom_loop?: PermissionActionConfig
-  [key: string]: PermissionRuleConfig | PermissionActionConfig | undefined
-}
+export type PermissionConfig =
+  | {
+      read?: PermissionRuleConfig
+      edit?: PermissionRuleConfig
+      glob?: PermissionRuleConfig
+      grep?: PermissionRuleConfig
+      list?: PermissionRuleConfig
+      bash?: PermissionRuleConfig
+      task?: PermissionRuleConfig
+      external_directory?: PermissionRuleConfig
+      todowrite?: PermissionActionConfig
+      todoread?: PermissionActionConfig
+      webfetch?: PermissionActionConfig
+      websearch?: PermissionActionConfig
+      codesearch?: PermissionActionConfig
+      doom_loop?: PermissionActionConfig
+      [key: string]: PermissionRuleConfig | PermissionActionConfig | undefined
+    }
+  | PermissionActionConfig
 
 export type AgentConfig = {
   model?: string
@@ -1788,12 +1800,13 @@ export type File = {
 
 export type PermissionAction = "allow" | "deny" | "ask"
 
-export type PermissionRuleset = {
-  [key: string]: Array<{
-    pattern: string
-    action: PermissionAction
-  }>
+export type PermissionRule = {
+  permission: string
+  pattern: string
+  action: PermissionAction
 }
+
+export type PermissionRuleset = Array<PermissionRule>
 
 export type Agent = {
   name: string
@@ -3268,6 +3281,41 @@ export type PermissionRespondResponses = {
 }
 
 export type PermissionRespondResponse = PermissionRespondResponses[keyof PermissionRespondResponses]
+
+export type PermissionReplyData = {
+  body?: {
+    reply: "once" | "always" | "reject"
+  }
+  path: {
+    requestID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/permission/{requestID}/reply"
+}
+
+export type PermissionReplyErrors = {
+  /**
+   * Bad request
+   */
+  400: BadRequestError
+  /**
+   * Not found
+   */
+  404: NotFoundError
+}
+
+export type PermissionReplyError = PermissionReplyErrors[keyof PermissionReplyErrors]
+
+export type PermissionReplyResponses = {
+  /**
+   * Permission processed successfully
+   */
+  200: boolean
+}
+
+export type PermissionReplyResponse = PermissionReplyResponses[keyof PermissionReplyResponses]
 
 export type CommandListData = {
   body?: never
