@@ -139,7 +139,7 @@ export namespace PermissionNext {
     },
   )
 
-  export const respond = fn(
+  export const reply = fn(
     z.object({
       requestID: Identifier.schema("permission"),
       reply: Reply,
