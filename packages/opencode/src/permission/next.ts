@@ -69,8 +69,7 @@ export namespace PermissionNext {
       sessionID: Identifier.schema("session"),
       permission: z.string(),
       patterns: z.string().array(),
-      title: z.string(),
-      description: z.string(),
+      message: z.string(),
       metadata: z.record(z.string(), z.any()),
       always: z.string().array(),
     })
@@ -154,31 +153,50 @@ export namespace PermissionNext {
   export const respond = fn(
     z.object({
       requestID: Identifier.schema("permission"),
-      response: Reply,
+      reply: Reply,
     }),
     async (input) => {
-      const existing = state().pending[input.requestID]
+      const s = state()
+      const existing = s.pending[input.requestID]
       if (!existing) return
-      delete state().pending[input.requestID]
-      if (input.response === "reject") {
+      delete s.pending[input.requestID]
+      Bus.publish(Event.Replied, {
+        sessionID: existing.info.sessionID,
+        requestID: existing.info.id,
+        reply: input.reply,
+      })
+      if (input.reply === "reject") {
         existing.reject(new RejectedError())
+        // Reject all other pending permissions for this session
+        const sessionID = existing.info.sessionID
+        for (const [id, pending] of Object.entries(s.pending)) {
+          if (pending.info.sessionID === sessionID) {
+            delete s.pending[id]
+            Bus.publish(Event.Replied, {
+              sessionID: pending.info.sessionID,
+              requestID: pending.info.id,
+              reply: "reject",
+            })
+            pending.reject(new RejectedError())
+          }
+        }
         return
       }
-      if (input.response === "once") {
+      if (input.reply === "once") {
         existing.resolve()
         Bus.publish(Event.Replied, {
           sessionID: existing.info.sessionID,
           requestID: existing.info.id,
-          reply: input.response,
+          reply: input.reply,
         })
         return
       }
-      if (input.response === "always") {
+      if (input.reply === "always") {
         existing.resolve()
         Bus.publish(Event.Replied, {
           sessionID: existing.info.sessionID,
           requestID: existing.info.id,
-          reply: input.response,
+          reply: input.reply,
         })
         return
       }

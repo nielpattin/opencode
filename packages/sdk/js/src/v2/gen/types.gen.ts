@@ -451,8 +451,7 @@ export type PermissionRequest = {
   id: string
   sessionID: string
   patterns: Array<string>
-  title: string
-  description: string
+  message: string
   metadata: {
     [key: string]: unknown
   }
@@ -472,7 +471,7 @@ export type Permission = {
   sessionID: string
   messageID: string
   callID?: string
-  title: string
+  message: string
   metadata: {
     [key: string]: unknown
   }

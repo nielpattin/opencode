@@ -61,14 +61,12 @@ export const WriteTool = Tool.define("write", {
 
     await PermissionNext.ask({
       permission: "edit",
-      title: "tbd",
+      message: `Create new file ${path.relative(Instance.directory, filepath)}`,
       patterns: [path.relative(Instance.worktree, filepath)],
       always: ["*"],
       sessionID: ctx.sessionID,
       metadata: {},
-      description: exists
-        ? "Overwrite this file: " + path.relative(Instance.directory, filepath)
-        : "Create new file: " + path.relative(Instance.directory, filepath),
+
       ruleset: agent.permission,
     })
 

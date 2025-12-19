@@ -9,12 +9,10 @@ import { Language } from "web-tree-sitter"
 import { Agent } from "@/agent/agent"
 import { $ } from "bun"
 import { Filesystem } from "@/util/filesystem"
-import { Wildcard } from "@/util/wildcard"
-import { Permission } from "@/permission"
 import { fileURLToPath } from "url"
 import { Flag } from "@/flag/flag.ts"
-import path from "path"
 import { Shell } from "@/shell/shell"
+import { PermissionNext } from "@/permission/next"
 
 const MAX_OUTPUT_LENGTH = Flag.OPENCODE_EXPERIMENTAL_BASH_MAX_OUTPUT_LENGTH || 30_000
 const DEFAULT_TIMEOUT = Flag.OPENCODE_EXPERIMENTAL_BASH_DEFAULT_TIMEOUT_MS || 2 * 60 * 1000
@@ -85,30 +83,15 @@ export const BashTool = Tool.define("bash", async () => {
 
       const checkExternalDirectory = async (dir: string) => {
         if (Filesystem.contains(Instance.directory, dir)) return
-        const title = `This command references paths outside of ${Instance.directory}`
-        if (agent.permission.external_directory === "ask") {
-          await Permission.ask({
-            type: "external_directory",
-            pattern: [dir, path.join(dir, "*")],
-            sessionID: ctx.sessionID,
-            messageID: ctx.messageID,
-            callID: ctx.callID,
-            title,
-            metadata: {
-              command: params.command,
-            },
-          })
-        } else if (agent.permission.external_directory === "deny") {
-          throw new Permission.RejectedError(
-            ctx.sessionID,
-            "external_directory",
-            ctx.callID,
-            {
-              command: params.command,
-            },
-            `${title} so this command is not allowed to be executed.`,
-          )
-        }
+        await PermissionNext.ask({
+          permission: "external_directory",
+          message: `This command references paths outside of ${Instance.directory}`,
+          patterns: [dir],
+          always: [dir + "*"],
+          sessionID: ctx.sessionID,
+          metadata: {},
+          ruleset: agent.permission,
+        })
       }
 
       await checkExternalDirectory(cwd)
@@ -157,41 +140,21 @@ export const BashTool = Tool.define("bash", async () => {
         }
 
         // always allow cd if it passes above check
-        if (command[0] !== "cd") {
-          const action = Wildcard.allStructured({ head: command[0], tail: command.slice(1) }, permissions)
-          if (action === "deny") {
-            throw new Error(
-              `The user has specifically restricted access to this command: "${command.join(" ")}", you are not allowed to execute it. The user has these settings configured: ${JSON.stringify(permissions)}`,
-            )
-          }
-          if (action === "ask") {
-            const pattern = (() => {
-              if (command.length === 0) return
-              const head = command[0]
-              // Find first non-flag argument as subcommand
-              const sub = command.slice(1).find((arg) => !arg.startsWith("-"))
-              return sub ? `${head} ${sub} *` : `${head} *`
-            })()
-            if (pattern) {
-              askPatterns.add(pattern)
-            }
-          }
+        if (command.length && command[0] !== "cd") {
+          askPatterns.add(command.join(" "))
         }
       }
 
       if (askPatterns.size > 0) {
         const patterns = Array.from(askPatterns)
-        await Permission.ask({
-          type: "bash",
-          pattern: patterns,
+        await PermissionNext.ask({
+          permission: "bash",
+          patterns,
           sessionID: ctx.sessionID,
-          messageID: ctx.messageID,
-          callID: ctx.callID,
-          title: params.command,
-          metadata: {
-            command: params.command,
-            patterns,
-          },
+          message: params.command,
+          metadata: {},
+          always: ["*"],
+          ruleset: agent.permission,
         })
       }
 
