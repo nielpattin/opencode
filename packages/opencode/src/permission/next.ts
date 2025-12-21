@@ -3,6 +3,7 @@ import { BusEvent } from "@/bus/bus-event"
 import { Config } from "@/config/config"
 import { Identifier } from "@/id/id"
 import { Instance } from "@/project/instance"
+import { Storage } from "@/storage/storage"
 import { fn } from "@/util/fn"
 import { Log } from "@/util/log"
 import { Wildcard } from "@/util/wildcard"
@@ -88,7 +89,10 @@ export namespace PermissionNext {
     ),
   }
 
-  const state = Instance.state(() => {
+  const state = Instance.state(async () => {
+    const projectID = Instance.project.id
+    const stored = await Storage.read<Ruleset>(["permission", projectID]).catch(() => [] as Ruleset)
+
     const pending: Record<
       string,
       {
@@ -98,13 +102,9 @@ export namespace PermissionNext {
       }
     > = {}
 
-    const approved: {
-      [projectID: string]: Set<string>
-    } = {}
-
     return {
       pending,
-      approved,
+      approved: stored,
     }
   })
 
@@ -113,15 +113,15 @@ export namespace PermissionNext {
       ruleset: Ruleset,
     }),
     async (input) => {
+      const s = await state()
       const { ruleset, ...request } = input
       for (const pattern of request.patterns ?? []) {
-        const action = evaluate(request.permission, pattern, ruleset)
+        const action = evaluate(request.permission, pattern, ruleset, s.approved)
         log.info("evaluated", { permission: request.permission, pattern, action })
         if (action === "deny") throw new RejectedError()
         if (action === "ask") {
           const id = input.id ?? Identifier.ascending("permission")
           return new Promise<void>((resolve, reject) => {
-            const s = state()
             const info: Request = {
               id,
               ...request,
@@ -145,7 +145,7 @@ export namespace PermissionNext {
       reply: Reply,
     }),
     async (input) => {
-      const s = state()
+      const s = await state()
       const existing = s.pending[input.requestID]
       if (!existing) return
       delete s.pending[input.requestID]
@@ -173,28 +173,28 @@ export namespace PermissionNext {
       }
       if (input.reply === "once") {
         existing.resolve()
-        Bus.publish(Event.Replied, {
-          sessionID: existing.info.sessionID,
-          requestID: existing.info.id,
-          reply: input.reply,
-        })
         return
       }
       if (input.reply === "always") {
+        const projectID = Instance.project.id
+        for (const pattern of existing.info.always) {
+          s.approved.push({
+            permission: existing.info.permission,
+            pattern,
+            action: "allow",
+          })
+        }
+        await Storage.write(["permission", projectID], s.approved)
         existing.resolve()
-        Bus.publish(Event.Replied, {
-          sessionID: existing.info.sessionID,
-          requestID: existing.info.id,
-          reply: input.reply,
-        })
         return
       }
     },
   )
 
-  export function evaluate(permission: string, pattern: string, ruleset: Ruleset): Action {
-    log.info("evaluate", { permission, pattern, ruleset })
-    const match = ruleset.findLast(
+  export function evaluate(permission: string, pattern: string, ...rulesets: Ruleset[]): Action {
+    const merged = merge(...rulesets)
+    log.info("evaluate", { permission, pattern, ruleset: merged })
+    const match = merged.findLast(
       (rule) => Wildcard.match(permission, rule.permission) && Wildcard.match(pattern, rule.pattern),
     )
     return match?.action ?? "ask"
@@ -203,14 +203,14 @@ export namespace PermissionNext {
   const EDIT_TOOLS = ["edit", "write", "patch", "multiedit"]
 
   export function disabled(tools: string[], ruleset: Ruleset): Set<string> {
-    const disabled = new Set<string>()
+    const result = new Set<string>()
     for (const tool of tools) {
       const permission = EDIT_TOOLS.includes(tool) ? "edit" : tool
       if (evaluate(permission, "*", ruleset) === "deny") {
-        disabled.add(tool)
+        result.add(tool)
       }
     }
-    return disabled
+    return result
   }
 
   export class RejectedError extends Error {

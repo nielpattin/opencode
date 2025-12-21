@@ -13,6 +13,7 @@ import { fileURLToPath } from "url"
 import { Flag } from "@/flag/flag.ts"
 import { Shell } from "@/shell/shell"
 import { PermissionNext } from "@/permission/next"
+import { BashArity } from "@/permission/arity"
 
 const MAX_OUTPUT_LENGTH = Flag.OPENCODE_EXPERIMENTAL_BASH_MAX_OUTPUT_LENGTH || 30_000
 const DEFAULT_TIMEOUT = Flag.OPENCODE_EXPERIMENTAL_BASH_DEFAULT_TIMEOUT_MS || 2 * 60 * 1000
@@ -81,24 +82,11 @@ export const BashTool = Tool.define("bash", async () => {
       }
       const agent = await Agent.get(ctx.agent)
 
-      const checkExternalDirectory = async (dir: string) => {
-        if (Filesystem.contains(Instance.directory, dir)) return
-        await PermissionNext.ask({
-          permission: "external_directory",
-          message: `This command references paths outside of ${Instance.directory}`,
-          patterns: [dir],
-          always: [dir + "*"],
-          sessionID: ctx.sessionID,
-          metadata: {},
-          ruleset: agent.permission,
-        })
-      }
+      const directories = new Set<string>()
+      if (!Filesystem.contains(Instance.directory, cwd)) directories.add(cwd)
+      const patterns = new Set<string>()
+      const always = new Set<string>()
 
-      await checkExternalDirectory(cwd)
-
-      const permissions = agent.permission.bash
-
-      const askPatterns = new Set<string>()
       for (const node of tree.rootNode.descendantsOfType("command")) {
         if (!node) continue
         const command = []
@@ -133,27 +121,39 @@ export const BashTool = Tool.define("bash", async () => {
                 process.platform === "win32" && resolved.match(/^\/[a-z]\//)
                   ? resolved.replace(/^\/([a-z])\//, (_, drive) => `${drive.toUpperCase()}:\\`).replace(/\//g, "\\")
                   : resolved
-
-              await checkExternalDirectory(normalized)
+              directories.add(normalized)
             }
           }
         }
 
-        // always allow cd if it passes above check
+        // cd covered by above check
         if (command.length && command[0] !== "cd") {
-          askPatterns.add(command.join(" "))
+          patterns.add(command.join(" "))
+          always.add(BashArity.prefix(command).join(" ") + "*")
         }
       }
 
-      if (askPatterns.size > 0) {
-        const patterns = Array.from(askPatterns)
+      if (directories.size > 0) {
+        const dirs = Array.from(directories)
+        await PermissionNext.ask({
+          permission: "external_directory",
+          message: `Requesting access to external directories: ${dirs.join(", ")}`,
+          patterns: Array.from(directories),
+          always: Array.from(directories).map((x) => x + "*"),
+          sessionID: ctx.sessionID,
+          metadata: {},
+          ruleset: agent.permission,
+        })
+      }
+
+      if (patterns.size > 0) {
         await PermissionNext.ask({
           permission: "bash",
-          patterns,
+          patterns: Array.from(patterns),
+          always: Array.from(always),
           sessionID: ctx.sessionID,
           message: params.command,
           metadata: {},
-          always: ["*"],
           ruleset: agent.permission,
         })
       }

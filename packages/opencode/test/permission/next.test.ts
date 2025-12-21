@@ -1,5 +1,8 @@
 import { test, expect } from "bun:test"
 import { PermissionNext } from "../../src/permission/next"
+import { Instance } from "../../src/project/instance"
+import { Storage } from "../../src/storage/storage"
+import { tmpdir } from "../fixture/fixture"
 
 // fromConfig tests
 
@@ -297,6 +300,14 @@ test("evaluate - permission patterns sorted by length regardless of object order
   expect(result).toBe("deny")
 })
 
+test("evaluate - merges multiple rulesets", () => {
+  const config: PermissionNext.Ruleset = [{ permission: "bash", pattern: "*", action: "allow" }]
+  const approved: PermissionNext.Ruleset = [{ permission: "bash", pattern: "rm", action: "deny" }]
+  // approved comes after config, so rm should be denied
+  const result = PermissionNext.evaluate("bash", "rm", config, approved)
+  expect(result).toBe("deny")
+})
+
 // disabled tests
 
 test("disabled - returns empty set when all tools allowed", () => {
@@ -404,4 +415,249 @@ test("disabled - specific allow overrides wildcard deny", () => {
   expect(result.has("bash")).toBe(false)
   expect(result.has("edit")).toBe(true)
   expect(result.has("read")).toBe(true)
+})
+
+// ask tests
+
+test("ask - resolves immediately when action is allow", async () => {
+  await using tmp = await tmpdir({ git: true })
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const result = await PermissionNext.ask({
+        sessionID: "session_test",
+        permission: "bash",
+        patterns: ["ls"],
+        message: "Run ls command",
+        metadata: {},
+        always: [],
+        ruleset: [{ permission: "bash", pattern: "*", action: "allow" }],
+      })
+      expect(result).toBeUndefined()
+    },
+  })
+})
+
+test("ask - throws RejectedError when action is deny", async () => {
+  await using tmp = await tmpdir({ git: true })
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      await expect(
+        PermissionNext.ask({
+          sessionID: "session_test",
+          permission: "bash",
+          patterns: ["rm -rf /"],
+          message: "Run dangerous command",
+          metadata: {},
+          always: [],
+          ruleset: [{ permission: "bash", pattern: "*", action: "deny" }],
+        }),
+      ).rejects.toBeInstanceOf(PermissionNext.RejectedError)
+    },
+  })
+})
+
+test("ask - returns pending promise when action is ask", async () => {
+  await using tmp = await tmpdir({ git: true })
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const promise = PermissionNext.ask({
+        sessionID: "session_test",
+        permission: "bash",
+        patterns: ["ls"],
+        message: "Run ls command",
+        metadata: {},
+        always: [],
+        ruleset: [{ permission: "bash", pattern: "*", action: "ask" }],
+      })
+      // Promise should be pending, not resolved
+      expect(promise).toBeInstanceOf(Promise)
+      // Don't await - just verify it returns a promise
+    },
+  })
+})
+
+// reply tests
+
+test("reply - once resolves the pending ask", async () => {
+  await using tmp = await tmpdir({ git: true })
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const askPromise = PermissionNext.ask({
+        id: "permission_test1",
+        sessionID: "session_test",
+        permission: "bash",
+        patterns: ["ls"],
+        message: "Run ls command",
+        metadata: {},
+        always: [],
+        ruleset: [],
+      })
+
+      await PermissionNext.reply({
+        requestID: "permission_test1",
+        reply: "once",
+      })
+
+      await expect(askPromise).resolves.toBeUndefined()
+    },
+  })
+})
+
+test("reply - reject throws RejectedError", async () => {
+  await using tmp = await tmpdir({ git: true })
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const askPromise = PermissionNext.ask({
+        id: "permission_test2",
+        sessionID: "session_test",
+        permission: "bash",
+        patterns: ["ls"],
+        message: "Run ls command",
+        metadata: {},
+        always: [],
+        ruleset: [],
+      })
+
+      await PermissionNext.reply({
+        requestID: "permission_test2",
+        reply: "reject",
+      })
+
+      await expect(askPromise).rejects.toBeInstanceOf(PermissionNext.RejectedError)
+    },
+  })
+})
+
+test("reply - always persists approval and resolves", async () => {
+  await using tmp = await tmpdir({ git: true })
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const askPromise = PermissionNext.ask({
+        id: "permission_test3",
+        sessionID: "session_test",
+        permission: "bash",
+        patterns: ["ls"],
+        message: "Run ls command",
+        metadata: {},
+        always: ["ls"],
+        ruleset: [],
+      })
+
+      await PermissionNext.reply({
+        requestID: "permission_test3",
+        reply: "always",
+      })
+
+      await expect(askPromise).resolves.toBeUndefined()
+    },
+  })
+  // Re-provide to reload state with stored permissions
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      // Stored approval should allow without asking
+      const result = await PermissionNext.ask({
+        sessionID: "session_test2",
+        permission: "bash",
+        patterns: ["ls"],
+        message: "Run ls command",
+        metadata: {},
+        always: [],
+        ruleset: [],
+      })
+      expect(result).toBeUndefined()
+    },
+  })
+})
+
+test("reply - reject cancels all pending for same session", async () => {
+  await using tmp = await tmpdir({ git: true })
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const askPromise1 = PermissionNext.ask({
+        id: "permission_test4a",
+        sessionID: "session_same",
+        permission: "bash",
+        patterns: ["ls"],
+        message: "Run ls",
+        metadata: {},
+        always: [],
+        ruleset: [],
+      })
+
+      const askPromise2 = PermissionNext.ask({
+        id: "permission_test4b",
+        sessionID: "session_same",
+        permission: "edit",
+        patterns: ["foo.ts"],
+        message: "Edit file",
+        metadata: {},
+        always: [],
+        ruleset: [],
+      })
+
+      // Catch rejections before they become unhandled
+      const result1 = askPromise1.catch((e) => e)
+      const result2 = askPromise2.catch((e) => e)
+
+      // Reject the first one
+      await PermissionNext.reply({
+        requestID: "permission_test4a",
+        reply: "reject",
+      })
+
+      // Both should be rejected
+      expect(await result1).toBeInstanceOf(PermissionNext.RejectedError)
+      expect(await result2).toBeInstanceOf(PermissionNext.RejectedError)
+    },
+  })
+})
+
+test("ask - checks all patterns and stops on first deny", async () => {
+  await using tmp = await tmpdir({ git: true })
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      await expect(
+        PermissionNext.ask({
+          sessionID: "session_test",
+          permission: "bash",
+          patterns: ["echo hello", "rm -rf /"],
+          message: "Run commands",
+          metadata: {},
+          always: [],
+          ruleset: [
+            { permission: "bash", pattern: "*", action: "allow" },
+            { permission: "bash", pattern: "rm *", action: "deny" },
+          ],
+        }),
+      ).rejects.toBeInstanceOf(PermissionNext.RejectedError)
+    },
+  })
+})
+
+test("ask - allows all patterns when all match allow rules", async () => {
+  await using tmp = await tmpdir({ git: true })
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const result = await PermissionNext.ask({
+        sessionID: "session_test",
+        permission: "bash",
+        patterns: ["echo hello", "ls -la", "pwd"],
+        message: "Run safe commands",
+        metadata: {},
+        always: [],
+        ruleset: [{ permission: "bash", pattern: "*", action: "allow" }],
+      })
+      expect(result).toBeUndefined()
+    },
+  })
 })
