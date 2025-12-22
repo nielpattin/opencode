@@ -252,11 +252,11 @@ description: An example skill for testing XML output.
       const result = await SystemPrompt.skills()
       expect(result.length).toBe(1)
       expect(result[0]).toContain("<available_skills>")
+      expect(result[0]).toContain("<id>example-skill</id>")
       expect(result[0]).toContain("<name>example-skill</name>")
       expect(result[0]).toContain("<description>An example skill for testing XML output.</description>")
-      expect(result[0]).toContain("SKILL.md</location>")
       expect(result[0]).toContain("</available_skills>")
-      expect(result[0]).toContain("When a task matches a skill's description")
+      expect(result[0]).toContain("use the skill tool")
     },
   })
 })

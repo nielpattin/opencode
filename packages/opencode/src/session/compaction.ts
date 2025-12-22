@@ -61,6 +61,9 @@ export namespace SessionCompaction {
         const part = msg.parts[partIndex]
         if (part.type === "tool")
           if (part.state.status === "completed") {
+            // Skip skill tool responses - they contain important instructions
+            if (part.tool === "skill") continue
+
             if (part.state.time.compacted) break loop
             const estimate = Token.estimate(part.state.output)
             total += estimate

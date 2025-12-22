@@ -534,7 +534,7 @@ export namespace SessionPrompt {
         sessionID,
         system: [
           ...(await SystemPrompt.environment()),
-          ...(await SystemPrompt.skills()),
+          ...(await SystemPrompt.skills(agent.name)),
           ...(await SystemPrompt.custom()),
         ],
         messages: [

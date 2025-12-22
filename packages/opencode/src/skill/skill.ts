@@ -31,6 +31,7 @@ export namespace Skill {
   export type Frontmatter = z.infer<typeof Frontmatter>
 
   export interface Info {
+    id: string // Path-based identifier (e.g., "code-review" or "docs/api-guide")
     name: string
     description: string
     location: string
@@ -57,23 +58,29 @@ export namespace Skill {
     }),
   )
 
-  const SKILL_GLOB = new Bun.Glob("skill/*/SKILL.md")
-  const CLAUDE_SKILL_GLOB = new Bun.Glob("*/SKILL.md")
+  const SKILL_GLOB = new Bun.Glob("skill/**/SKILL.md")
+  const CLAUDE_SKILL_GLOB = new Bun.Glob("**/SKILL.md")
 
-  async function discover(): Promise<string[]> {
+  interface DiscoveredSkill {
+    path: string
+    baseDir: string // The skill/ or .claude/skills/ directory
+  }
+
+  async function discover(): Promise<DiscoveredSkill[]> {
     const directories = await Config.directories()
 
-    const paths: string[] = []
+    const results: DiscoveredSkill[] = []
 
     // Scan skill/ subdirectory in config directories (.opencode/, ~/.opencode/, etc.)
     for (const dir of directories) {
+      const baseDir = path.join(dir, "skill")
       for await (const match of SKILL_GLOB.scan({
         cwd: dir,
         absolute: true,
         onlyFiles: true,
         followSymlinks: true,
       })) {
-        paths.push(match)
+        results.push({ path: match, baseDir })
       }
     }
 
@@ -89,14 +96,15 @@ export namespace Skill {
         onlyFiles: true,
         followSymlinks: true,
       })) {
-        paths.push(match)
+        results.push({ path: match, baseDir: dir })
       }
     }
 
-    return paths
+    return results
   }
 
-  async function load(skillMdPath: string): Promise<Info> {
+  async function load(discovered: DiscoveredSkill): Promise<Info> {
+    const skillMdPath = discovered.path
     const md = await ConfigMarkdown.parse(skillMdPath)
     if (!md.data) {
       throw new InvalidError({
@@ -125,7 +133,13 @@ export namespace Skill {
       })
     }
 
+    // Generate path-based ID from relative path
+    // e.g., baseDir=/path/skill, skillDir=/path/skill/docs/api-guide → id=docs/api-guide
+    const relativePath = path.relative(discovered.baseDir, skillDir)
+    const id = relativePath.split(path.sep).join("/") // Normalize to forward slashes
+
     return {
+      id,
       name: frontmatter.name,
       description: frontmatter.description,
       location: skillMdPath,
@@ -136,12 +150,12 @@ export namespace Skill {
   }
 
   export const state = Instance.state(async () => {
-    const paths = await discover()
+    const discovered = await discover()
     const skills: Info[] = []
 
-    for (const skillPath of paths) {
-      const info = await load(skillPath)
-      log.info("loaded skill", { name: info.name, location: info.location })
+    for (const item of discovered) {
+      const info = await load(item)
+      log.info("loaded skill", { id: info.id, name: info.name, location: info.location })
       skills.push(info)
     }
 
