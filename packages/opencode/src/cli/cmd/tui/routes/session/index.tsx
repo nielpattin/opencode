@@ -68,6 +68,7 @@ import { usePromptRef } from "../../context/prompt"
 import { Filesystem } from "@/util/filesystem"
 import { DialogSubagent } from "./dialog-subagent.tsx"
 import { PermissionPrompt } from "./permission"
+import { permission } from "process"
 
 addDefaultParsers(parsers.parsers)
 
@@ -1177,7 +1178,7 @@ function AssistantMessage(props: { message: AssistantMessage; parts: Part[]; las
         <Match when={props.last || final()}>
           <box paddingLeft={3}>
             <text marginTop={1}>
-              <span style={{ fg: local.agent.color(props.message.mode) }}>▣ </span>{" "}
+              <span style={{ fg: local.agent.color(props.message.agent) }}>▣ </span>{" "}
               <span style={{ fg: theme.text }}>{Locale.titlecase(props.message.mode)}</span>
               <span style={{ fg: theme.textMuted }}> · {props.message.modelID}</span>
               <Show when={duration()}>
@@ -1289,7 +1290,7 @@ function ToolPart(props: { last: boolean; part: ToolPart; message: AssistantMess
             gap: 1,
             backgroundColor: theme.backgroundPanel,
             customBorderChars: SplitBorder.customBorderChars,
-            borderColor: permissionIndex === 0 ? theme.warning : theme.background,
+            borderColor: theme.background,
           }
         : {
             paddingLeft: 3,
@@ -1335,23 +1336,12 @@ function ToolPart(props: { last: boolean; part: ToolPart; message: AssistantMess
             <text fg={theme.error}>{props.part.state.error.replace("Error: ", "")}</text>
           </box>
         )}
-        {permission && (
+        {permissions.length > 0 && (
           <box gap={1}>
-            <text fg={theme.text}>Permission required to run this tool:</text>
-            <box flexDirection="row" gap={2}>
-              <text fg={theme.text}>
-                <b>enter</b>
-                <span style={{ fg: theme.textMuted }}> accept</span>
-              </text>
-              <text fg={theme.text}>
-                <b>a</b>
-                <span style={{ fg: theme.textMuted }}> accept always</span>
-              </text>
-              <text fg={theme.text}>
-                <b>d</b>
-                <span style={{ fg: theme.textMuted }}> deny</span>
-              </text>
-            </box>
+            <text fg={theme.text}>
+              <span style={{ fg: theme.warning }}>△</span>
+              <span style={{ fg: theme.textMuted }}> Permission requested</span>
+            </text>
           </box>
         )}
       </box>

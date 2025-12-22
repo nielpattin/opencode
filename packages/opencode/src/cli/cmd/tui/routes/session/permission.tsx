@@ -4,6 +4,7 @@ import { useKeyboard } from "@opentui/solid"
 import { useTheme } from "../../context/theme"
 import type { PermissionRequest } from "@opencode-ai/sdk/v2"
 import { useSDK } from "../../context/sdk"
+import { SplitBorder } from "../../component/border"
 
 export function PermissionPrompt(props: { request: PermissionRequest }) {
   const sdk = useSDK()
@@ -16,7 +17,7 @@ export function PermissionPrompt(props: { request: PermissionRequest }) {
       <Match when={store.always}>
         <Prompt
           title="Always allow"
-          body={props.request.always.join("\n").replaceAll("*", "")}
+          body={props.request.always.join("\n")}
           options={{ confirm: "Confirm", cancel: "Cancel" }}
           onSelect={(option) => {
             if (option === "cancel") {
@@ -85,8 +86,13 @@ function Prompt<const T extends Record<string, string>>(props: {
   })
 
   return (
-    <box backgroundColor={theme.backgroundPanel}>
-      <box gap={1} paddingLeft={3} paddingRight={3} paddingTop={1} paddingBottom={1}>
+    <box
+      backgroundColor={theme.backgroundPanel}
+      border={["left"]}
+      borderColor={theme.warning}
+      customBorderChars={SplitBorder.customBorderChars}
+    >
+      <box gap={1} paddingLeft={2} paddingRight={3} paddingTop={1} paddingBottom={1}>
         <box flexDirection="row" gap={1}>
           <text fg={theme.warning}>{"△"}</text>
           <text fg={theme.text}>{props.title}</text>
@@ -101,9 +107,8 @@ function Prompt<const T extends Record<string, string>>(props: {
       <box
         flexDirection="row"
         gap={1}
-        paddingLeft={3}
+        paddingLeft={2}
         paddingRight={3}
-        paddingTop={1}
         paddingBottom={1}
         backgroundColor={theme.backgroundElement}
         justifyContent="space-between"
@@ -114,7 +119,7 @@ function Prompt<const T extends Record<string, string>>(props: {
               <box
                 paddingLeft={1}
                 paddingRight={1}
-                backgroundColor={option === store.selected ? theme.primary : theme.backgroundMenu}
+                backgroundColor={option === store.selected ? theme.warning : theme.backgroundMenu}
               >
                 <text fg={option === store.selected ? theme.selectedListItemText : theme.textMuted}>
                   {props.options[option]}
