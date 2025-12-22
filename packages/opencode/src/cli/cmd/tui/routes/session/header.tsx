@@ -7,10 +7,10 @@ import type { Session } from "@opencode-ai/sdk/v2"
 import { useKeybind } from "../../context/keybind"
 import { useTerminalDimensions } from "@opentui/solid"
 
-const Title = (props: { session: Accessor<Session> }) => {
+const Title = (props: { session: Accessor<Session>; truncate?: boolean }) => {
   const { theme } = useTheme()
   return (
-    <text fg={theme.text}>
+    <text fg={theme.text} wrapMode={props.truncate ? "none" : undefined} flexShrink={props.truncate ? 1 : 0}>
       <span style={{ bold: true }}>#</span> <span style={{ bold: true }}>{props.session().title}</span>
     </text>
   )
@@ -96,7 +96,7 @@ export function Header() {
             </Match>
             <Match when={true}>
               <box flexDirection="row" justifyContent="space-between" gap={1}>
-                <Title session={session} />
+                <Title session={session} truncate={!tall()} />
                 <Show when={showShare()}>
                   <text fg={theme.textMuted} wrapMode="none" flexShrink={0}>
                     /share{" "}
