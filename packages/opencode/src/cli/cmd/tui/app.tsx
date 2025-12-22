@@ -195,8 +195,8 @@ function App() {
   })
 
   // Update terminal window title based on current route and session
-  // Braille spinner animation frames for when agent is running (two characters, fluid animation)
-  const spinnerFrames = ["⠋⠙", "⠙⠹", "⠹⠸", "⠸⠼", "⠼⠴", "⠴⠦", "⠦⠧", "⠧⠇", "⠇⠏", "⠏⠋"]
+  // Braille spinner animation frames for when agent is running (space + single character for consistent width with "OC")
+  const spinnerFrames = [" ⠋", " ⠙", " ⠹", " ⠸", " ⠼", " ⠴", " ⠦", " ⠧", " ⠇", " ⠏"]
   let spinnerInterval: ReturnType<typeof setInterval> | undefined
   let spinnerIndex = 0
   let currentTitle = ""
