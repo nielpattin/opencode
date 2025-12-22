@@ -1,9 +1,7 @@
-import { createMemo, For } from "solid-js"
+import { createMemo, createSignal, For } from "solid-js"
 import { useTheme } from "@tui/context/theme"
 import { TIPS } from "./tips"
 import { EmptyBorder } from "./border"
-
-const tip = TIPS[Math.floor(Math.random() * TIPS.length)]
 
 type TipPart = { text: string; highlight: boolean }
 
@@ -28,13 +26,19 @@ function parseTip(tip: string): TipPart[] {
   return parts
 }
 
-const tipParts = parseTip(tip)
+const [tipIndex, setTipIndex] = createSignal(Math.floor(Math.random() * TIPS.length))
+
+export function randomizeTip() {
+  setTipIndex(Math.floor(Math.random() * TIPS.length))
+}
 
 const BOX_WIDTH = 42
 const TITLE = " 🅘 Did you know? "
 
 export function DidYouKnow() {
   const { theme } = useTheme()
+
+  const tipParts = createMemo(() => parseTip(TIPS[tipIndex()]))
 
   const dashes = createMemo(() => {
     // ╭─ + title + ─...─ + ╮ = BOX_WIDTH
@@ -62,7 +66,7 @@ export function DidYouKnow() {
       >
         <box paddingLeft={2} paddingRight={2} paddingTop={1} paddingBottom={1}>
           <text>
-            <For each={tipParts}>
+            <For each={tipParts()}>
               {(part) => <span style={{ fg: part.highlight ? theme.text : theme.textMuted }}>{part.text}</span>}
             </For>
           </text>
