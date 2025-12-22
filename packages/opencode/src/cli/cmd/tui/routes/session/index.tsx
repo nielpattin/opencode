@@ -22,6 +22,7 @@ import {
   ScrollBoxRenderable,
   addDefaultParsers,
   MacOSScrollAccel,
+  RGBA,
   type ScrollAcceleration,
 } from "@opentui/core"
 import { Prompt, type PromptRef } from "@tui/component/prompt"
@@ -1024,8 +1025,21 @@ export function Session() {
           <Sidebar sessionID={route.sessionID} />
         </Show>
         <Show when={sidebarOverlay()}>
-          <box position="absolute" right={0} top={0} height={dimensions().height} zIndex={100}>
-            <Sidebar sessionID={route.sessionID} />
+          <box
+            position="absolute"
+            left={0}
+            top={0}
+            width={dimensions().width}
+            height={dimensions().height}
+            backgroundColor={RGBA.fromInts(0, 0, 0, 150)}
+            zIndex={100}
+            flexDirection="row"
+            justifyContent="flex-end"
+            onMouseUp={() => setSidebar("hide")}
+          >
+            <box onMouseUp={(e) => e.stopPropagation()}>
+              <Sidebar sessionID={route.sessionID} />
+            </box>
           </box>
         </Show>
       </box>
