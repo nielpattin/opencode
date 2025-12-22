@@ -25,6 +25,20 @@ Once you've configured your provider you can select the model you want by typing
 
 ---
 
+## Context usage (Desktop)
+
+When you’re using the OpenCode **desktop app**, you’ll see a small context usage indicator next to the prompt input. It shows roughly how “full” the current model’s context window is.
+
+Hover the indicator to see:
+
+- **Tokens**: Total tokens used by the most recent assistant message (input + output + reasoning + cache).
+- **Usage**: Percentage of the model’s `limit.context`.
+- **Cost**: Running cost for the session (assistant messages).
+
+This is handy when deciding whether to compact the session, start a fresh one, or switch to a model with a larger context window.
+
+---
+
 ## Recommended models
 
 There are a lot of models out there, with new models coming out every week.
