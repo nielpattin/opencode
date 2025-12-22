@@ -1804,6 +1804,10 @@
                   },
                   "modelID": {
                     "type": "string"
+                  },
+                  "auto": {
+                    "default": false,
+                    "type": "boolean"
                   }
                 },
                 "required": ["providerID", "modelID"]
@@ -7304,6 +7308,16 @@
             "default": "ctrl+alt+g,end",
             "type": "string"
           },
+          "messages_next": {
+            "description": "Navigate to next message",
+            "default": "none",
+            "type": "string"
+          },
+          "messages_previous": {
+            "description": "Navigate to previous message",
+            "default": "none",
+            "type": "string"
+          },
           "messages_last_user": {
             "description": "Navigate to last user message",
             "default": "none",
@@ -7584,6 +7598,11 @@
             "default": "<leader>left",
             "type": "string"
           },
+          "session_parent": {
+            "description": "Go to parent session",
+            "default": "<leader>up",
+            "type": "string"
+          },
           "terminal_suspend": {
             "description": "Suspend terminal",
             "default": "ctrl+z",
@@ -7651,6 +7670,24 @@
                 "enum": ["ask", "allow", "deny"]
               },
               "bash": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": ["ask", "allow", "deny"]
+                  },
+                  {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "type": "string",
+                      "enum": ["ask", "allow", "deny"]
+                    }
+                  }
+                ]
+              },
+              "skill": {
                 "anyOf": [
                   {
                     "type": "string",
@@ -8359,6 +8396,24 @@
                 "enum": ["ask", "allow", "deny"]
               },
               "bash": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": ["ask", "allow", "deny"]
+                  },
+                  {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "type": "string",
+                      "enum": ["ask", "allow", "deny"]
+                    }
+                  }
+                ]
+              },
+              "skill": {
                 "anyOf": [
                   {
                     "type": "string",
@@ -9185,6 +9240,16 @@
                   "enum": ["ask", "allow", "deny"]
                 }
               },
+              "skill": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "type": "string",
+                  "enum": ["ask", "allow", "deny"]
+                }
+              },
               "webfetch": {
                 "type": "string",
                 "enum": ["ask", "allow", "deny"]
@@ -9198,7 +9263,7 @@
                 "enum": ["ask", "allow", "deny"]
               }
             },
-            "required": ["edit", "bash"]
+            "required": ["edit", "bash", "skill"]
           },
           "model": {
             "type": "object",
