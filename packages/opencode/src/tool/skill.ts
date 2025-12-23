@@ -3,9 +3,8 @@ import z from "zod"
 import { Tool } from "./tool"
 import { Skill } from "../skill"
 import { Agent } from "../agent/agent"
-import { Permission } from "../permission"
-import { Wildcard } from "../util/wildcard"
 import { ConfigMarkdown } from "../config/markdown"
+import { PermissionNext } from "@/permission/next"
 
 export const SkillTool = Tool.define("skill", async () => {
   const skills = await Skill.all()
@@ -38,31 +37,15 @@ export const SkillTool = Tool.define("skill", async () => {
         throw new Error(`Skill "${params.name}" not found. Available skills: ${available || "none"}`)
       }
 
-      // Check permission using Wildcard.all on the skill ID
-      const permissions = agent.permission.skill
-      const action = Wildcard.all(params.name, permissions)
-
-      if (action === "deny") {
-        throw new Permission.RejectedError(
-          ctx.sessionID,
-          "skill",
-          ctx.callID,
-          { skill: params.name },
-          `Access to skill "${params.name}" is denied for agent "${agent.name}".`,
-        )
-      }
-
-      if (action === "ask") {
-        await Permission.ask({
-          type: "skill",
-          pattern: params.name,
-          sessionID: ctx.sessionID,
-          messageID: ctx.messageID,
-          callID: ctx.callID,
-          title: `Load skill: ${skill.name}`,
-          metadata: { id: params.name, name: skill.name, description: skill.description },
-        })
-      }
+      await PermissionNext.ask({
+        permission: "skill",
+        patterns: [params.name],
+        always: [params.name],
+        sessionID: ctx.sessionID,
+        message: `Activate skill ${params.name}`,
+        metadata: {},
+        ruleset: agent.permission,
+      })
 
       // Load and parse skill content
       const parsed = await ConfigMarkdown.parse(skill.location)
