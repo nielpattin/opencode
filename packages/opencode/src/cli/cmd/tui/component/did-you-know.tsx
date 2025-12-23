@@ -1,5 +1,6 @@
 import { createMemo, createSignal, For } from "solid-js"
 import { useTheme } from "@tui/context/theme"
+import { useKeybind } from "@tui/context/keybind"
 import { TIPS } from "./tips"
 import { EmptyBorder } from "./border"
 
@@ -37,6 +38,7 @@ const TITLE = " 🅘 Did you know? "
 
 export function DidYouKnow() {
   const { theme } = useTheme()
+  const keybind = useKeybind()
 
   const tipParts = createMemo(() => parseTip(TIPS[tipIndex()]))
 
@@ -74,7 +76,7 @@ export function DidYouKnow() {
       </box>
       <box flexDirection="row" justifyContent="flex-end">
         <text>
-          <span style={{ fg: theme.text }}>ctrl+h</span>
+          <span style={{ fg: theme.text }}>{keybind.print("tips_toggle")}</span>
           <span style={{ fg: theme.textMuted }}> hide tips</span>
         </text>
       </box>
@@ -84,12 +86,13 @@ export function DidYouKnow() {
 
 export function ShowTipsHint() {
   const { theme } = useTheme()
+  const keybind = useKeybind()
 
   return (
     <box position="absolute" bottom={3} right={2}>
       <box flexDirection="row" justifyContent="flex-end">
         <text>
-          <span style={{ fg: theme.text }}>ctrl+h</span>
+          <span style={{ fg: theme.text }}>{keybind.print("tips_toggle")}</span>
           <span style={{ fg: theme.textMuted }}> show tips</span>
         </text>
       </box>

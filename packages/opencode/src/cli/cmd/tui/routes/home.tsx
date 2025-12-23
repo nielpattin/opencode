@@ -1,9 +1,8 @@
 import { Prompt, type PromptRef } from "@tui/component/prompt"
 import { createMemo, Match, onMount, Show, Switch } from "solid-js"
 import { useTheme } from "@tui/context/theme"
-import { useKeyboard } from "@opentui/solid"
 import { Logo } from "../component/logo"
-import { DidYouKnow, ShowTipsHint } from "../component/did-you-know"
+import { DidYouKnow, ShowTipsHint, randomizeTip } from "../component/did-you-know"
 import { Locale } from "@/util/locale"
 import { useSync } from "../context/sync"
 import { Toast } from "../ui/toast"
@@ -13,6 +12,7 @@ import { useRouteData } from "@tui/context/route"
 import { usePromptRef } from "../context/prompt"
 import { Installation } from "@/installation"
 import { useKV } from "../context/kv"
+import { useCommandDialog } from "../component/dialog-command"
 
 // TODO: what is the best way to do this?
 let once = false
@@ -23,6 +23,7 @@ export function Home() {
   const { theme } = useTheme()
   const route = useRouteData("home")
   const promptRef = usePromptRef()
+  const command = useCommandDialog()
   const mcp = createMemo(() => Object.keys(sync.data.mcp).length > 0)
   const mcpError = createMemo(() => {
     return Object.values(sync.data.mcp).some((x) => x.status === "failed")
@@ -40,13 +41,18 @@ export function Home() {
     return !tipsHidden()
   })
 
-  useKeyboard((evt) => {
-    if (isFirstTimeUser()) return
-    if (evt.name === "h" && evt.ctrl && !evt.meta && !evt.shift) {
-      kv.set("tips_hidden", !tipsHidden())
-      evt.preventDefault()
-    }
-  })
+  command.register(() => [
+    {
+      title: tipsHidden() ? "Show tips" : "Hide tips",
+      value: "tips.toggle",
+      keybind: "tips_toggle",
+      category: "System",
+      onSelect: (dialog) => {
+        kv.set("tips_hidden", !tipsHidden())
+        dialog.clear()
+      },
+    },
+  ])
 
   const Hint = (
     <Show when={connectedMcpCount() > 0}>
@@ -70,6 +76,7 @@ export function Home() {
   let prompt: PromptRef
   const args = useArgs()
   onMount(() => {
+    randomizeTip()
     if (once) return
     if (route.initialPrompt) {
       prompt.set(route.initialPrompt)
