@@ -42,7 +42,6 @@ export namespace Agent {
 
   const state = Instance.state(async () => {
     const cfg = await Config.get()
-
     const permission: PermissionNext.Ruleset = PermissionNext.merge(
       PermissionNext.fromConfig({
         "*": "allow",
