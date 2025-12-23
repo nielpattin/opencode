@@ -40,23 +40,10 @@ export function Home() {
     return !tipsHidden()
   })
 
-  function hideTips() {
-    kv.set("tips_hidden", true)
-  }
-
-  function enableTips() {
-    kv.set("tips_hidden", false)
-  }
-
   useKeyboard((evt) => {
-    // Don't handle tips keybind for first-time users
     if (isFirstTimeUser()) return
     if (evt.name === "h" && evt.ctrl && !evt.meta && !evt.shift) {
-      if (showTips()) {
-        hideTips()
-      } else {
-        enableTips()
-      }
+      kv.set("tips_hidden", !tipsHidden())
       evt.preventDefault()
     }
   })
