@@ -1,7 +1,7 @@
 {
   "name": "@opencode-ai/tauri",
   "private": true,
-  "version": "1.0.164",
+  "version": "1.0.190",
   "type": "module",
   "scripts": {
     "typecheck": "tsgo -b",
@@ -12,7 +12,8 @@
     "tauri": "tauri"
   },
   "dependencies": {
-    "@opencode-ai/desktop": "workspace:*",
+    "@opencode-ai/app": "workspace:*",
+    "@solid-primitives/storage": "catalog:",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-dialog": "~2",
     "@tauri-apps/plugin-opener": "^2",
@@ -21,6 +22,7 @@
     "@tauri-apps/plugin-shell": "~2",
     "@tauri-apps/plugin-store": "~2",
     "@tauri-apps/plugin-updater": "~2",
+    "@tauri-apps/plugin-http": "~2",
     "@tauri-apps/plugin-window-state": "~2",
     "solid-js": "catalog:"
   },
