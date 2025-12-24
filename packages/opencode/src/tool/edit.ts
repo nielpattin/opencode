@@ -43,7 +43,8 @@ export const EditTool = Tool.define("edit", {
 
     const agent = await Agent.get(ctx.agent)
 
-    const filePath = path.isAbsolute(params.filePath) ? params.filePath : path.join(Instance.directory, params.filePath)
+    const rawPath = Filesystem.toNativePath(params.filePath)
+    const filePath = path.isAbsolute(rawPath) ? rawPath : path.join(Instance.directory, rawPath)
     if (!Filesystem.contains(Instance.directory, filePath)) {
       const parentDir = path.dirname(filePath)
       if (agent.permission.external_directory === "ask") {
@@ -168,7 +169,7 @@ export const EditTool = Tool.define("edit", {
         diff,
         filediff,
       },
-      title: `${path.relative(Instance.worktree, filePath)}`,
+      title: `${Filesystem.safeRelative(Instance.worktree, filePath)}`,
       output,
     }
   },

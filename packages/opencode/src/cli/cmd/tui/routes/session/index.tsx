@@ -1859,12 +1859,24 @@ ToolRegistry.register<typeof TodoWriteTool>({
   },
 })
 
-function normalizePath(input?: string) {
+function normalizePath(input?: string, maxLength = 50) {
   if (!input) return ""
-  if (path.isAbsolute(input)) {
-    return path.relative(process.cwd(), input) || "."
+  // Convert MSYS/Cygwin/GitBash paths on Windows before processing
+  const normalized = Filesystem.toNativePath(input)
+  let result = normalized
+  if (path.isAbsolute(normalized)) {
+    result = Filesystem.safeRelative(process.cwd(), normalized) || "."
   }
-  return input
+  // Abbreviate long paths, keep filename, truncate middle of parent path
+  if (result.length > maxLength) {
+    const parts = result.split(path.sep).filter(Boolean)
+    const last = parts.at(-1)!
+    const rest = parts.slice(0, -1).join(path.sep)
+    if (rest) {
+      result = Locale.truncateMiddle(rest, maxLength - last.length - 1) + path.sep + last
+    }
+  }
+  return result
 }
 
 function input(input: Record<string, any>, omit?: string[]): string {
