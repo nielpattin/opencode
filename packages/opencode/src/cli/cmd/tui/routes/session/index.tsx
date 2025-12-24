@@ -1591,7 +1591,7 @@ ToolRegistry.register<typeof WriteTool>({
     return (
       <>
         <ToolTitle icon="←" fallback="Preparing write..." when={done}>
-          Wrote {props.input.filePath}
+          Wrote {normalizePath(props.input.filePath ?? "")}
         </ToolTitle>
         <Show when={done}>
           <line_number fg={theme.textMuted} minWidth={3} paddingRight={1}>

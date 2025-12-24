@@ -34,14 +34,17 @@ export namespace Filesystem {
     return !relative(parent, child).startsWith("..")
   }
 
-  // Safe relative path that handles cross-drive paths on Windows
+  // Safe relative path - returns absolute if cross-drive or too many parent traversals
   export function safeRelative(from: string, to: string): string {
     if (process.platform === "win32") {
       const fromDrive = from.match(/^([a-zA-Z]):/)?.[1]?.toUpperCase()
       const toDrive = to.match(/^([a-zA-Z]):/)?.[1]?.toUpperCase()
       if (fromDrive && toDrive && fromDrive !== toDrive) return to
     }
-    return relative(from, to)
+    const rel = relative(from, to)
+    // If path has 3+ parent traversals, use absolute path instead
+    if (/^(\.\.[/\\]){3,}/.test(rel)) return to
+    return rel
   }
 
   export async function findUp(target: string, start: string, stop?: string) {
