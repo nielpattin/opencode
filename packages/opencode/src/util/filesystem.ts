@@ -3,11 +3,19 @@ import { exists } from "fs/promises"
 import { dirname, join, relative } from "path"
 
 export namespace Filesystem {
-  /**
-   * On Windows, normalize a path to its canonical casing using the filesystem.
-   * This is needed because Windows paths are case-insensitive but LSP servers
-   * may return paths with different casing than what we send them.
-   */
+  // Convert MSYS2/Git Bash/Cygwin paths to Windows paths (no-op on other platforms)
+  export function toNativePath(p: string): string {
+    if (process.platform !== "win32") return p
+    if (/^\/[a-zA-Z]\//.test(p)) {
+      return p.replace(/^\/([a-zA-Z])\//, (_, d) => `${d.toUpperCase()}:\\`).replace(/\//g, "\\")
+    }
+    if (/^\/cygdrive\/[a-zA-Z]\//.test(p)) {
+      return p.replace(/^\/cygdrive\/([a-zA-Z])\//, (_, d) => `${d.toUpperCase()}:\\`).replace(/\//g, "\\")
+    }
+    return p
+  }
+
+  // Normalize path casing on Windows using filesystem
   export function normalizePath(p: string): string {
     if (process.platform !== "win32") return p
     try {
@@ -24,6 +32,19 @@ export namespace Filesystem {
 
   export function contains(parent: string, child: string) {
     return !relative(parent, child).startsWith("..")
+  }
+
+  // Safe relative path - returns absolute if cross-drive or too many parent traversals
+  export function safeRelative(from: string, to: string): string {
+    if (process.platform === "win32") {
+      const fromDrive = from.match(/^([a-zA-Z]):/)?.[1]?.toUpperCase()
+      const toDrive = to.match(/^([a-zA-Z]):/)?.[1]?.toUpperCase()
+      if (fromDrive && toDrive && fromDrive !== toDrive) return to
+    }
+    const rel = relative(from, to)
+    // If path has 3+ parent traversals, use absolute path instead
+    if (/^(\.\.[/\\]){3,}/.test(rel)) return to
+    return rel
   }
 
   export async function findUp(target: string, start: string, stop?: string) {

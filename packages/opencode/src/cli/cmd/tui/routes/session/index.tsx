@@ -1643,7 +1643,7 @@ ToolRegistry.register<typeof WriteTool>({
     return (
       <>
         <ToolTitle icon="←" fallback="Preparing write..." when={done}>
-          Wrote {props.input.filePath}
+          Wrote {normalizePath(props.input.filePath ?? "")}
         </ToolTitle>
         <Show when={done}>
           <line_number fg={theme.textMuted} minWidth={3} paddingRight={1}>
@@ -1911,12 +1911,16 @@ ToolRegistry.register<typeof TodoWriteTool>({
   },
 })
 
-function normalizePath(input?: string) {
+function normalizePath(input?: string, maxLength = 50) {
   if (!input) return ""
-  if (path.isAbsolute(input)) {
-    return path.relative(process.cwd(), input) || "."
-  }
-  return input
+  const normalized = Filesystem.toNativePath(input)
+  const relative = path.isAbsolute(normalized) ? Filesystem.safeRelative(process.cwd(), normalized) || "." : normalized
+  if (relative.length <= maxLength) return relative
+  const parts = relative.split(path.sep).filter(Boolean)
+  const last = parts.at(-1)!
+  const rest = parts.slice(0, -1).join(path.sep)
+  if (!rest) return relative
+  return Locale.truncateMiddle(rest, maxLength - last.length - 1) + path.sep + last
 }
 
 function input(input: Record<string, any>, omit?: string[]): string {

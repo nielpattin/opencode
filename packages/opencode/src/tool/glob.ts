@@ -4,6 +4,7 @@ import { Tool } from "./tool"
 import DESCRIPTION from "./glob.txt"
 import { Ripgrep } from "../file/ripgrep"
 import { Instance } from "../project/instance"
+import { Filesystem } from "../util/filesystem"
 
 export const GlobTool = Tool.define("glob", {
   description: DESCRIPTION,
@@ -17,8 +18,8 @@ export const GlobTool = Tool.define("glob", {
       ),
   }),
   async execute(params) {
-    let search = params.path ?? Instance.directory
-    search = path.isAbsolute(search) ? search : path.resolve(Instance.directory, search)
+    const rawPath = params.path ? Filesystem.toNativePath(params.path) : Instance.directory
+    const search = path.isAbsolute(rawPath) ? rawPath : path.resolve(Instance.directory, rawPath)
 
     const limit = 100
     const files = []
@@ -54,7 +55,7 @@ export const GlobTool = Tool.define("glob", {
     }
 
     return {
-      title: path.relative(Instance.worktree, search),
+      title: Filesystem.safeRelative(Instance.worktree, search),
       metadata: {
         count: files.length,
         truncated,

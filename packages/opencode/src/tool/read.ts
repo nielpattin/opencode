@@ -23,11 +23,11 @@ export const ReadTool = Tool.define("read", {
     limit: z.coerce.number().describe("The number of lines to read (defaults to 2000)").optional(),
   }),
   async execute(params, ctx) {
-    let filepath = params.filePath
+    let filepath = Filesystem.toNativePath(params.filePath)
     if (!path.isAbsolute(filepath)) {
       filepath = path.join(process.cwd(), filepath)
     }
-    const title = path.relative(Instance.worktree, filepath)
+    const title = Filesystem.safeRelative(Instance.worktree, filepath)
     const agent = await Agent.get(ctx.agent)
 
     if (!ctx.extra?.["bypassCwdCheck"] && !Filesystem.contains(Instance.directory, filepath)) {

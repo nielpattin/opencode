@@ -219,7 +219,7 @@ export const PatchTool = Tool.define("patch", {
     }
 
     // Generate output summary
-    const relativePaths = changedFiles.map((filePath) => path.relative(Instance.worktree, filePath))
+    const relativePaths = changedFiles.map((filePath) => Filesystem.safeRelative(Instance.worktree, filePath))
     const summary = `${fileChanges.length} files changed`
 
     return {
