@@ -47,6 +47,7 @@ import { SessionStatus } from "@/session/status"
 import { upgradeWebSocket, websocket } from "hono/bun"
 import { errors } from "./error"
 import { Pty } from "@/pty"
+import { AskQuestion } from "@/askquestion"
 import { Installation } from "@/installation"
 
 // @ts-ignore This global is needed to prevent ai-sdk from logging warnings to stdout https://github.com/vercel/ai/blob/2dc67e0ef538307f21368db32d5a12345d98831b/packages/ai/src/logger/log-warnings.ts#L85
@@ -1320,7 +1321,9 @@ export namespace Server {
           return stream(c, async (stream) => {
             const sessionID = c.req.valid("param").sessionID
             const body = c.req.valid("json")
-            const msg = await SessionPrompt.prompt({ ...body, sessionID })
+            const clientHeader = c.req.header("x-opencode-client")
+            const client = clientHeader === "tui" ? "tui" : "web"
+            const msg = await SessionPrompt.prompt({ ...body, sessionID, client })
             stream.write(JSON.stringify(msg))
           })
         },
@@ -1352,7 +1355,9 @@ export namespace Server {
           return stream(c, async () => {
             const sessionID = c.req.valid("param").sessionID
             const body = c.req.valid("json")
-            SessionPrompt.prompt({ ...body, sessionID })
+            const clientHeader = c.req.header("x-opencode-client")
+            const client = clientHeader === "tui" ? "tui" : "web"
+            SessionPrompt.prompt({ ...body, sessionID, client })
           })
         },
       )
@@ -1389,8 +1394,9 @@ export namespace Server {
         async (c) => {
           const sessionID = c.req.valid("param").sessionID
           const body = c.req.valid("json")
-          const msg = await SessionPrompt.command({ ...body, sessionID })
-          return c.json(msg)
+          const clientHeader = c.req.header("x-opencode-client")
+          const client = clientHeader === "tui" ? "tui" : "web"
+          await SessionPrompt.command({ ...body, sessionID, client })
         },
       )
       .post(
@@ -1421,7 +1427,9 @@ export namespace Server {
         async (c) => {
           const sessionID = c.req.valid("param").sessionID
           const body = c.req.valid("json")
-          const msg = await SessionPrompt.shell({ ...body, sessionID })
+          const clientHeader = c.req.header("x-opencode-client")
+          const client = clientHeader === "tui" ? "tui" : "web"
+          const msg = await SessionPrompt.shell({ ...body, sessionID, client })
           return c.json(msg)
         },
       )
@@ -1525,6 +1533,76 @@ export namespace Server {
             permissionID,
             response: c.req.valid("json").response,
           })
+          return c.json(true)
+        },
+      )
+      .post(
+        "/askquestion/respond",
+        describeRoute({
+          summary: "Respond to askquestion",
+          description: "Submit answers to a pending askquestion tool call.",
+          operationId: "askquestion.respond",
+          responses: {
+            200: {
+              description: "Response submitted successfully",
+              content: {
+                "application/json": {
+                  schema: resolver(z.boolean()),
+                },
+              },
+            },
+            ...errors(400, 404),
+          },
+        }),
+        validator(
+          "json",
+          z.object({
+            sessionID: z.string(),
+            callID: z.string(),
+            answers: AskQuestion.AnswerSchema.array(),
+          }),
+        ),
+        async (c) => {
+          const { callID, answers } = c.req.valid("json")
+          // The partID is the callID for the askquestion
+          const success = AskQuestion.respond(callID, answers)
+          if (!success) {
+            throw new Error("No pending askquestion found with this ID")
+          }
+          return c.json(true)
+        },
+      )
+      .post(
+        "/askquestion/cancel",
+        describeRoute({
+          summary: "Cancel askquestion",
+          description: "Cancel a pending askquestion tool call.",
+          operationId: "askquestion.cancel",
+          responses: {
+            200: {
+              description: "Cancelled successfully",
+              content: {
+                "application/json": {
+                  schema: resolver(z.boolean()),
+                },
+              },
+            },
+            ...errors(400, 404),
+          },
+        }),
+        validator(
+          "json",
+          z.object({
+            sessionID: z.string(),
+            callID: z.string(),
+          }),
+        ),
+        async (c) => {
+          const { callID } = c.req.valid("json")
+          const success = AskQuestion.cancel(callID)
+          if (!success) {
+            throw new Error("No pending askquestion found with this ID")
+          }
           return c.json(true)
         },
       )

@@ -90,6 +90,7 @@ export namespace SessionPrompt {
     noReply: z.boolean().optional(),
     tools: z.record(z.string(), z.boolean()).optional(),
     system: z.string().optional(),
+    client: z.enum(["tui", "web", "desktop"]).optional(),
     parts: z.array(
       z.discriminatedUnion("type", [
         MessageV2.TextPart.omit({
@@ -514,6 +515,7 @@ export namespace SessionPrompt {
         model,
         tools: lastUser.tools,
         processor,
+        client: lastUser.client,
       })
 
       if (step === 1) {
@@ -575,6 +577,7 @@ export namespace SessionPrompt {
     sessionID: string
     tools?: Record<string, boolean>
     processor: SessionProcessor.Info
+    client?: "tui" | "web" | "desktop"
   }) {
     using _ = log.time("resolveTools")
     const tools: Record<string, AITool> = {}
@@ -583,7 +586,9 @@ export namespace SessionPrompt {
       mergeDeep(await ToolRegistry.enabled(input.agent)),
       mergeDeep(input.tools ?? {}),
     )
+
     for (const item of await ToolRegistry.tools(input.model.providerID, input.agent)) {
+      if (item.id === "askquestion" && input.client !== "tui") continue
       if (Wildcard.all(item.id, enabledTools) === false) continue
       const schema = ProviderTransform.schema(input.model, z.toJSONSchema(item.parameters))
       tools[item.id] = tool({
@@ -610,21 +615,34 @@ export namespace SessionPrompt {
             extra: { model: input.model },
             agent: input.agent.name,
             metadata: async (val) => {
-              const match = input.processor.partFromToolCall(options.toolCallId)
-              if (match && match.state.status === "running") {
-                await Session.updatePart({
-                  ...match,
-                  state: {
-                    title: val.title,
-                    metadata: val.metadata,
-                    status: "running",
-                    input: args,
-                    time: {
-                      start: Date.now(),
-                    },
-                  },
-                })
+              const findPart = async (retries: number): Promise<MessageV2.ToolPart | undefined> => {
+                const match = input.processor.partFromToolCall(options.toolCallId)
+                if (match?.state.status === "running") return match as MessageV2.ToolPart
+                if (retries >= 20) return undefined
+                await new Promise((resolve) => setTimeout(resolve, 50))
+                return findPart(retries + 1)
               }
+
+              const match = await findPart(0)
+              if (!match) {
+                log.warn("metadata: part not found or not running after waiting", {
+                  toolCallId: options.toolCallId,
+                })
+                return
+              }
+
+              await Session.updatePart({
+                ...match,
+                state: {
+                  title: val.title,
+                  metadata: val.metadata,
+                  status: "running",
+                  input: args,
+                  time: {
+                    start: Date.now(),
+                  },
+                },
+              })
             },
           })
           await Plugin.trigger(
@@ -727,6 +745,7 @@ export namespace SessionPrompt {
       agent: agent.name,
       model: input.model ?? agent.model ?? (await lastModel(input.sessionID)),
       system: input.system,
+      client: input.client,
     }
 
     const parts = await Promise.all(
@@ -1039,6 +1058,7 @@ export namespace SessionPrompt {
       })
       .optional(),
     command: z.string(),
+    client: z.enum(["tui", "web", "desktop"]).optional(),
   })
   export type ShellInput = z.infer<typeof ShellInput>
   export async function shell(input: ShellInput) {
@@ -1061,11 +1081,12 @@ export namespace SessionPrompt {
         created: Date.now(),
       },
       role: "user",
-      agent: input.agent,
+      agent: agent.name,
       model: {
         providerID: model.providerID,
         modelID: model.modelID,
       },
+      client: input.client,
     }
     await Session.updateMessage(userMsg)
     const userPart: MessageV2.Part = {
@@ -1267,6 +1288,7 @@ export namespace SessionPrompt {
     model: z.string().optional(),
     arguments: z.string(),
     command: z.string(),
+    client: z.enum(["tui", "web", "desktop"]).optional(),
   })
   export type CommandInput = z.infer<typeof CommandInput>
   const bashRegex = /!`([^`]+)`/g
@@ -1369,6 +1391,7 @@ export namespace SessionPrompt {
       model,
       agent: agentName,
       parts,
+      client: input.client,
     })) as MessageV2.WithParts
 
     Bus.publish(Command.Event.Executed, {
