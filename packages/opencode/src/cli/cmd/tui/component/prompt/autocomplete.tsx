@@ -371,6 +371,11 @@ export function Autocomplete(props: {
         onSelect: () => command.trigger("mcp.list"),
       },
       {
+        display: "/tools",
+        description: "list tools",
+        onSelect: () => command.trigger("tool.list"),
+      },
+      {
         display: "/restart-mcp",
         description: "restart all MCP servers",
         onSelect: () => command.trigger("mcp.restart"),
