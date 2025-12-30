@@ -91,6 +91,7 @@ export namespace SessionPrompt {
     tools: z.record(z.string(), z.boolean()).optional(),
     system: z.string().optional(),
     client: z.enum(["tui", "web", "desktop"]).optional(),
+    variant: z.string().optional(),
     parts: z.array(
       z.discriminatedUnion("type", [
         MessageV2.TextPart.omit({
@@ -746,6 +747,7 @@ export namespace SessionPrompt {
       model: input.model ?? agent.model ?? (await lastModel(input.sessionID)),
       system: input.system,
       client: input.client,
+      variant: input.variant,
     }
 
     const parts = await Promise.all(
@@ -1289,6 +1291,7 @@ export namespace SessionPrompt {
     arguments: z.string(),
     command: z.string(),
     client: z.enum(["tui", "web", "desktop"]).optional(),
+    variant: z.string().optional(),
   })
   export type CommandInput = z.infer<typeof CommandInput>
   const bashRegex = /!`([^`]+)`/g
@@ -1392,6 +1395,7 @@ export namespace SessionPrompt {
       agent: agentName,
       parts,
       client: input.client,
+      variant: input.variant,
     })) as MessageV2.WithParts
 
     Bus.publish(Command.Event.Executed, {
