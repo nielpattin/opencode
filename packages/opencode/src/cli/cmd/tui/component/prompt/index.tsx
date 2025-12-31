@@ -38,10 +38,12 @@ export type PromptProps = {
   ref?: (ref: PromptRef) => void
   hint?: JSX.Element
   showPlaceholder?: boolean
+  initialValue?: string
 }
 
 export type PromptRef = {
   focused: boolean
+  text: string
   current: PromptInfo
   set(prompt: PromptInfo): void
   reset(): void
@@ -374,6 +376,10 @@ export function Prompt(props: PromptProps) {
 
   onMount(() => {
     promptPartTypeId = input.extmarks.registerType("prompt-part")
+    if (props.initialValue) {
+      input.setText(props.initialValue)
+      setStore("prompt", "input", props.initialValue)
+    }
   })
 
   function restoreExtmarksFromParts(parts: PromptInfo["parts"]) {
@@ -512,6 +518,9 @@ export function Prompt(props: PromptProps) {
   props.ref?.({
     get focused() {
       return input.focused
+    },
+    get text() {
+      return input.plainText
     },
     get current() {
       return store.prompt

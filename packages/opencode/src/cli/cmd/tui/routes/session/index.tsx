@@ -62,8 +62,9 @@ import { Clipboard } from "../../util/clipboard"
 import { Toast, useToast } from "../../ui/toast"
 import { useKV } from "../../context/kv.tsx"
 import { Editor } from "../../util/editor"
-import stripAnsi from "strip-ansi"
 import { Footer } from "./footer.tsx"
+import { extend } from "@opentui/solid"
+import { GhosttyTerminalRenderable } from "ghostty-opentui/opentui"
 import { usePromptRef } from "../../context/prompt"
 import { Filesystem } from "@/util/filesystem"
 import { DialogSubagent } from "./dialog-subagent.tsx"
@@ -72,7 +73,15 @@ import { DialogAskQuestion } from "../../ui/dialog-askquestion.tsx"
 import type { AskQuestion } from "@/askquestion"
 import { DialogExportOptions } from "../../ui/dialog-export-options"
 
+declare module "@opentui/solid" {
+  interface OpenTUIComponents {
+    "ghostty-terminal": typeof GhosttyTerminalRenderable
+  }
+}
+
 addDefaultParsers(parsers.parsers)
+
+extend({ "ghostty-terminal": GhosttyTerminalRenderable })
 
 class CustomSpeedScroll implements ScrollAcceleration {
   constructor(private speed: number) {}
@@ -82,6 +91,12 @@ class CustomSpeedScroll implements ScrollAcceleration {
   }
 
   reset(): void {}
+}
+
+type BashOutputView = {
+  command: string
+  messageID: string
+  partID: string
 }
 
 const context = createContext<{
@@ -94,6 +109,8 @@ const context = createContext<{
   userMessageMarkdown: () => boolean
   diffWrapMode: () => "word" | "none"
   sync: ReturnType<typeof useSync>
+  bashOutput: () => BashOutputView | undefined
+  showBashOutput: (view: BashOutputView | undefined) => void
 }>()
 
 function use() {
@@ -126,6 +143,8 @@ export function Session() {
   const [conceal, setConceal] = createSignal(true)
   const [showThinking, setShowThinking] = createSignal(kv.get("thinking_visibility", true))
   const [showTimestamps, setShowTimestamps] = createSignal(kv.get("timestamps", "hide") === "show")
+  const [bashOutput, setBashOutput] = createSignal<BashOutputView | undefined>(undefined)
+  const [promptDraft, setPromptDraft] = createSignal("")
   const [usernameVisible, setUsernameVisible] = createSignal(kv.get("username_visible", true))
   const [showDetails, setShowDetails] = createSignal(kv.get("tool_details_visibility", true))
   const [showScrollbar, setShowScrollbar] = createSignal(kv.get("scrollbar_visible", false))
@@ -234,6 +253,7 @@ export function Session() {
   })
 
   let scroll: ScrollBoxRenderable
+  let bashScroll: ScrollBoxRenderable
   let prompt: PromptRef
   const keybind = useKeybind()
 
@@ -285,6 +305,35 @@ export function Session() {
 
   useKeyboard((evt) => {
     if (dialog.stack.length > 0) return
+
+    if (bashOutput()) {
+      const scroll = bashScroll
+      const amount = 3
+      const pageAmount = Math.max(1, dimensions().height - 4)
+      if (evt.name === "escape" || (evt.name === "c" && evt.ctrl)) {
+        setBashOutput(undefined)
+        evt.preventDefault()
+      } else if (evt.name === "up") {
+        scroll?.scrollBy(-amount)
+        evt.preventDefault()
+      } else if (evt.name === "down") {
+        scroll?.scrollBy(amount)
+        evt.preventDefault()
+      } else if (evt.name === "pageup") {
+        scroll?.scrollBy(-pageAmount)
+        evt.preventDefault()
+      } else if (evt.name === "pagedown") {
+        scroll?.scrollBy(pageAmount)
+        evt.preventDefault()
+      } else if (evt.name === "home") {
+        scroll?.scrollTo(0)
+        evt.preventDefault()
+      } else if (evt.name === "end") {
+        scroll?.scrollTo(scroll.scrollHeight)
+        evt.preventDefault()
+      }
+      return
+    }
 
     const first = permissions()[0]
     if (first) {
@@ -1033,6 +1082,11 @@ export function Session() {
         userMessageMarkdown,
         diffWrapMode,
         sync,
+        bashOutput,
+        showBashOutput: (view) => {
+          if (view && prompt) setPromptDraft(prompt.text)
+          setBashOutput(view)
+        },
       }}
     >
       <box flexDirection="row">
@@ -1041,178 +1095,223 @@ export function Session() {
             <Show when={!sidebarVisible()}>
               <Header />
             </Show>
-            <scrollbox
-              ref={(r) => (scroll = r)}
-              viewportOptions={{
-                paddingRight: showScrollbar() ? 1 : 0,
-              }}
-              verticalScrollbarOptions={{
-                paddingLeft: 1,
-                visible: showScrollbar(),
-                trackOptions: {
-                  backgroundColor: theme.backgroundElement,
-                  foregroundColor: theme.border,
-                },
-              }}
-              stickyScroll={true}
-              stickyStart="bottom"
-              flexGrow={1}
-              scrollAcceleration={scrollAcceleration()}
-            >
-              <For each={messages()}>
-                {(message, index) => (
-                  <Switch>
-                    <Match when={message.id === revert()?.messageID}>
-                      {(function () {
-                        const command = useCommandDialog()
-                        const [hover, setHover] = createSignal(false)
-                        const dialog = useDialog()
+            <Switch>
+              <Match when={bashOutput()}>
+                {(view) => {
+                  const output = createMemo(() => {
+                    const parts = sync.data.part[view().messageID] ?? []
+                    const partIndex = parts.findIndex((p) => p.id === view().partID)
+                    if (partIndex < 0) return ""
+                    const part = sync.data.part[view().messageID]?.[partIndex]
+                    if (part?.type === "tool" && "metadata" in part.state) {
+                      const metadata = part.state.metadata as { output?: string } | undefined
+                      return (metadata?.output ?? "").trim()
+                    }
+                    return ""
+                  })
+                  return (
+                    <box flexGrow={1} flexDirection="column">
+                      <box paddingLeft={1} paddingBottom={1} flexShrink={0}>
+                        <text fg={theme.textMuted}>$ {view().command}</text>
+                      </box>
+                      <scrollbox
+                        ref={(r) => (bashScroll = r)}
+                        flexGrow={1}
+                        paddingLeft={1}
+                        paddingBottom={1}
+                        scrollAcceleration={scrollAcceleration()}
+                        stickyScroll={true}
+                        stickyStart="bottom"
+                      >
+                        <ghostty-terminal ansi={output()} cols={contentWidth()} />
+                      </scrollbox>
+                      <box flexShrink={0} paddingLeft={1}>
+                        <text fg={theme.textMuted}>
+                          ESC to close | ↑/↓ scroll | PgUp/PgDn page | Home/End top/bottom
+                        </text>
+                      </box>
+                    </box>
+                  )
+                }}
+              </Match>
+              <Match when={!bashOutput()}>
+                <>
+                  <scrollbox
+                    ref={(r) => (scroll = r)}
+                    viewportOptions={{
+                      paddingRight: showScrollbar() ? 1 : 0,
+                    }}
+                    verticalScrollbarOptions={{
+                      paddingLeft: 1,
+                      visible: showScrollbar(),
+                      trackOptions: {
+                        backgroundColor: theme.backgroundElement,
+                        foregroundColor: theme.border,
+                      },
+                    }}
+                    stickyScroll={true}
+                    stickyStart="bottom"
+                    flexGrow={1}
+                    scrollAcceleration={scrollAcceleration()}
+                  >
+                    <For each={messages()}>
+                      {(message, index) => (
+                        <Switch>
+                          <Match when={message.id === revert()?.messageID}>
+                            {(function () {
+                              const command = useCommandDialog()
+                              const [hover, setHover] = createSignal(false)
+                              const dialog = useDialog()
 
-                        const handleUnrevert = async () => {
-                          const confirmed = await DialogConfirm.show(
-                            dialog,
-                            "Confirm Redo",
-                            "Are you sure you want to restore the reverted messages?",
-                          )
-                          if (confirmed) {
-                            command.trigger("session.redo")
-                          }
-                        }
+                              const handleUnrevert = async () => {
+                                const confirmed = await DialogConfirm.show(
+                                  dialog,
+                                  "Confirm Redo",
+                                  "Are you sure you want to restore the reverted messages?",
+                                )
+                                if (confirmed) {
+                                  command.trigger("session.redo")
+                                }
+                              }
 
-                        return (
-                          <box
-                            onMouseOver={() => setHover(true)}
-                            onMouseOut={() => setHover(false)}
-                            onMouseUp={handleUnrevert}
-                            marginTop={1}
-                            flexShrink={0}
-                            border={["left"]}
-                            customBorderChars={SplitBorder.customBorderChars}
-                            borderColor={theme.backgroundPanel}
-                          >
-                            <box
-                              paddingTop={1}
-                              paddingBottom={1}
-                              paddingLeft={2}
-                              backgroundColor={hover() ? theme.backgroundElement : theme.backgroundPanel}
-                            >
-                              <text fg={theme.textMuted}>{revert()!.reverted.length} message reverted</text>
-                              <text fg={theme.textMuted}>
-                                <span style={{ fg: theme.text }}>{keybind.print("messages_redo")}</span> or /redo to
-                                restore
-                              </text>
-                              <Show when={revert()!.diffFiles?.length}>
-                                <box marginTop={1}>
-                                  <For each={revert()!.diffFiles}>
-                                    {(file) => (
-                                      <text fg={theme.text}>
-                                        {file.filename}
-                                        <Show when={file.additions > 0}>
-                                          <span style={{ fg: theme.diffAdded }}> +{file.additions}</span>
-                                        </Show>
-                                        <Show when={file.deletions > 0}>
-                                          <span style={{ fg: theme.diffRemoved }}> -{file.deletions}</span>
-                                        </Show>
-                                      </text>
-                                    )}
-                                  </For>
+                              return (
+                                <box
+                                  onMouseOver={() => setHover(true)}
+                                  onMouseOut={() => setHover(false)}
+                                  onMouseUp={handleUnrevert}
+                                  marginTop={1}
+                                  flexShrink={0}
+                                  border={["left"]}
+                                  customBorderChars={SplitBorder.customBorderChars}
+                                  borderColor={theme.backgroundPanel}
+                                >
+                                  <box
+                                    paddingTop={1}
+                                    paddingBottom={1}
+                                    paddingLeft={2}
+                                    backgroundColor={hover() ? theme.backgroundElement : theme.backgroundPanel}
+                                  >
+                                    <text fg={theme.textMuted}>{revert()!.reverted.length} message reverted</text>
+                                    <text fg={theme.textMuted}>
+                                      <span style={{ fg: theme.text }}>{keybind.print("messages_redo")}</span> or /redo
+                                      to restore
+                                    </text>
+                                    <Show when={revert()!.diffFiles?.length}>
+                                      <box marginTop={1}>
+                                        <For each={revert()!.diffFiles}>
+                                          {(file) => (
+                                            <text fg={theme.text}>
+                                              {file.filename}
+                                              <Show when={file.additions > 0}>
+                                                <span style={{ fg: theme.diffAdded }}> +{file.additions}</span>
+                                              </Show>
+                                              <Show when={file.deletions > 0}>
+                                                <span style={{ fg: theme.diffRemoved }}> -{file.deletions}</span>
+                                              </Show>
+                                            </text>
+                                          )}
+                                        </For>
+                                      </box>
+                                    </Show>
+                                  </box>
                                 </box>
-                              </Show>
-                            </box>
-                          </box>
-                        )
-                      })()}
-                    </Match>
-                    <Match when={revert()?.messageID && message.id >= revert()!.messageID}>
-                      <></>
-                    </Match>
-                    <Match when={message.role === "user"}>
-                      <UserMessage
-                        index={index()}
-                        onMouseUp={() => {
-                          if (renderer.getSelection()?.getSelectedText()) return
-                          dialog.replace(() => (
-                            <DialogMessage
-                              messageID={message.id}
-                              sessionID={route.sessionID}
-                              setPrompt={(promptInfo) => prompt.set(promptInfo)}
+                              )
+                            })()}
+                          </Match>
+                          <Match when={revert()?.messageID && message.id >= revert()!.messageID}>
+                            <></>
+                          </Match>
+                          <Match when={message.role === "user"}>
+                            <UserMessage
+                              index={index()}
+                              onMouseUp={() => {
+                                if (renderer.getSelection()?.getSelectedText()) return
+                                dialog.replace(() => (
+                                  <DialogMessage
+                                    messageID={message.id}
+                                    sessionID={route.sessionID}
+                                    setPrompt={(promptInfo) => prompt.set(promptInfo)}
+                                  />
+                                ))
+                              }}
+                              message={message as UserMessage}
+                              parts={sync.data.part[message.id] ?? []}
+                              pending={pending()}
                             />
-                          ))
-                        }}
-                        message={message as UserMessage}
-                        parts={sync.data.part[message.id] ?? []}
-                        pending={pending()}
-                      />
-                    </Match>
-                    <Match when={message.role === "assistant"}>
-                      <AssistantMessage
-                        last={lastAssistant()?.id === message.id}
-                        message={message as AssistantMessage}
-                        parts={sync.data.part[message.id] ?? []}
-                      />
-                    </Match>
-                  </Switch>
-                )}
-              </For>
-            </scrollbox>
-            <box flexShrink={0}>
-              <Switch>
-                <Match when={pendingAskQuestionFromSync()}>
-                  {(pending) => (
-                    <DialogAskQuestion
-                      questions={pending().questions}
-                      onSubmit={async (answers) => {
-                        await fetch(`${sdk.url}/askquestion/respond`, {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            callID: pending().callID,
-                            sessionID: route.sessionID,
-                            answers,
-                          }),
-                        }).catch(() => {
-                          toast.show({
-                            message: "Failed to submit answers",
-                            variant: "error",
-                          })
-                        })
-                      }}
-                      onCancel={async () => {
-                        await fetch(`${sdk.url}/askquestion/cancel`, {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            callID: pending().callID,
-                            sessionID: route.sessionID,
-                          }),
-                        }).catch(() => {
-                          toast.show({
-                            message: "Failed to cancel",
-                            variant: "error",
-                          })
-                        })
-                      }}
-                    />
-                  )}
-                </Match>
-                <Match when={!pendingAskQuestionFromSync()}>
-                  <Prompt
-                    ref={(r) => {
-                      prompt = r
-                      promptRef.set(r)
-                    }}
-                    disabled={permissions().length > 0}
-                    onSubmit={() => {
-                      toBottom()
-                    }}
-                    sessionID={route.sessionID}
-                  />
-                </Match>
-              </Switch>
-            </box>
-            <Show when={!sidebarVisible()}>
-              <Footer />
-            </Show>
+                          </Match>
+                          <Match when={message.role === "assistant"}>
+                            <AssistantMessage
+                              last={lastAssistant()?.id === message.id}
+                              message={message as AssistantMessage}
+                              parts={sync.data.part[message.id] ?? []}
+                            />
+                          </Match>
+                        </Switch>
+                      )}
+                    </For>
+                  </scrollbox>
+                  <box flexShrink={0}>
+                    <Switch>
+                      <Match when={pendingAskQuestionFromSync()}>
+                        {(pending) => (
+                          <DialogAskQuestion
+                            questions={pending().questions}
+                            onSubmit={async (answers) => {
+                              await fetch(`${sdk.url}/askquestion/respond`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  callID: pending().callID,
+                                  sessionID: route.sessionID,
+                                  answers,
+                                }),
+                              }).catch(() => {
+                                toast.show({
+                                  message: "Failed to submit answers",
+                                  variant: "error",
+                                })
+                              })
+                            }}
+                            onCancel={async () => {
+                              await fetch(`${sdk.url}/askquestion/cancel`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  callID: pending().callID,
+                                  sessionID: route.sessionID,
+                                }),
+                              }).catch(() => {
+                                toast.show({
+                                  message: "Failed to cancel",
+                                  variant: "error",
+                                })
+                              })
+                            }}
+                          />
+                        )}
+                      </Match>
+                      <Match when={!pendingAskQuestionFromSync()}>
+                        <Prompt
+                          ref={(r) => {
+                            prompt = r
+                            promptRef.set(r)
+                          }}
+                          disabled={permissions().length > 0}
+                          onSubmit={() => {
+                            toBottom()
+                          }}
+                          sessionID={route.sessionID}
+                          initialValue={promptDraft()}
+                        />
+                      </Match>
+                    </Switch>
+                  </box>
+                  <Show when={!sidebarVisible()}>
+                    <Footer />
+                  </Show>
+                </>
+              </Match>
+            </Switch>
           </Show>
           <Toast />
         </box>
@@ -1566,7 +1665,7 @@ function ToolPart(props: { last: boolean; part: ToolPart; message: AssistantMess
 
     const render = ToolRegistry.render(props.part.tool) ?? GenericTool
 
-    const metadata = props.part.state.status === "pending" ? {} : (props.part.state.metadata ?? {})
+    const metadata = "metadata" in props.part.state ? (props.part.state.metadata ?? {}) : {}
     const input = props.part.state.input ?? {}
     const container = ToolRegistry.container(props.part.tool)
     const permissions = sync.data.permission[props.message.sessionID] ?? []
@@ -1624,6 +1723,8 @@ function ToolPart(props: { last: boolean; part: ToolPart; message: AssistantMess
           metadata={metadata}
           permission={permission?.metadata ?? {}}
           output={props.part.state.status === "completed" ? props.part.state.output : undefined}
+          messageID={props.message.id}
+          partID={props.part.id}
         />
         {props.part.state.status === "error" && (
           <box paddingLeft={2}>
@@ -1662,6 +1763,8 @@ type ToolProps<T extends Tool.Info> = {
   permission: Record<string, any>
   tool: string
   output?: string
+  messageID: string
+  partID: string
 }
 function GenericTool(props: ToolProps<any>) {
   return (
@@ -1704,26 +1807,46 @@ function ToolTitle(props: { fallback: string; when: any; icon: string; children:
   )
 }
 
+const BASH_DISPLAY_LINES = 20
+
 ToolRegistry.register<typeof BashTool>({
   name: "bash",
   container: "block",
   render(props) {
-    const output = createMemo(() => stripAnsi(props.metadata.output?.trim() ?? ""))
+    const rawOutput = createMemo(() => props.metadata.output?.trim() ?? "")
+    const ctx = use()
     const { theme } = useTheme()
+
+    const displayOutput = createMemo(() => {
+      const lines = rawOutput().split("\n")
+      if (lines.length <= BASH_DISPLAY_LINES) return rawOutput()
+      return lines.slice(0, BASH_DISPLAY_LINES).join("\n") + `\n... (${lines.length - BASH_DISPLAY_LINES} more lines)`
+    })
+
+    const truncated = createMemo(() => rawOutput().split("\n").length > BASH_DISPLAY_LINES)
+
     return (
-      <>
+      <box>
         <ToolTitle icon="#" fallback="Writing command..." when={props.input.command}>
           {props.input.description || "Shell"}
         </ToolTitle>
         <Show when={props.input.command}>
           <text fg={theme.text}>$ {props.input.command}</text>
         </Show>
-        <Show when={output()}>
-          <box>
-            <text fg={theme.text}>{output()}</text>
+        <Show when={displayOutput()}>
+          {/* rows here means that the ANSI is rendered via Ghostty as 2 lines per page. Then the result is returned as 20 lines */}
+          <ghostty-terminal ansi={displayOutput()} rows={20} limit={20} trimEnd cols={ctx.width} />
+        </Show>
+        <Show when={truncated() || (!props.output && rawOutput())}>
+          <box
+            onMouseUp={() => {
+              ctx.showBashOutput({ command: props.input.command!, messageID: props.messageID, partID: props.partID })
+            }}
+          >
+            <text fg={theme.textMuted}>Click to see full output</text>
           </box>
         </Show>
-      </>
+      </box>
     )
   },
 })

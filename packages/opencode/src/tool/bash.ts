@@ -14,6 +14,7 @@ import { Permission } from "@/permission"
 import { fileURLToPath } from "url"
 import { Flag } from "@/flag/flag.ts"
 import path from "path"
+import { ptyToText } from "ghostty-opentui"
 import { Shell } from "@/shell/shell"
 
 const MAX_OUTPUT_LENGTH = Flag.OPENCODE_EXPERIMENTAL_BASH_MAX_OUTPUT_LENGTH || 30_000
@@ -199,6 +200,16 @@ export const BashTool = Tool.define("bash", async () => {
         shell,
         cwd,
         env: {
+          // Force color output in as many tools as possible
+          FORCE_COLOR: "3",
+          CLICOLOR: "1",
+          CLICOLOR_FORCE: "1",
+          TERM: "xterm-256color",
+          TERM_PROGRAM: "bash-tool",
+          TERM_COLOR: "1",
+          PY_COLORS: "1",
+          ANSICON: "1",
+          COLORTERM: "truecolor",
           ...process.env,
         },
         stdio: ["ignore", "pipe", "pipe"],
@@ -299,7 +310,7 @@ export const BashTool = Tool.define("bash", async () => {
           exit: proc.exitCode,
           description: params.description,
         },
-        output,
+        output: ptyToText(output, { rows: 120, cols: 256 }),
       }
     },
   }
