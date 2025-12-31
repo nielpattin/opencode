@@ -14,12 +14,9 @@
   <a href="https://github.com/sst/opencode/actions/workflows/publish.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/sst/opencode/publish.yml?style=flat-square&branch=dev" /></a>
 </p>
 
-
-
-This is a fork of Opencode that includes features from various upstream pull requests that I like. 
+This is a fork of Opencode that includes features from various upstream pull requests that I like.
 
 Below is a summary of the added features along with their respective details.
-
 
 ---
 
@@ -27,6 +24,7 @@ Below is a summary of the added features along with their respective details.
 
 | Commit      | Date       | Feature                                                              | Upstream PR                                                        | Author         | Description                                     |
 | ----------- | ---------- | -------------------------------------------------------------------- | ------------------------------------------------------------------ | -------------- | ----------------------------------------------- |
+| `a85806f28` | 2026-01-01 | feat(tui): add bash output viewer with ANSI color support            | [#4791](https://github.com/sst/opencode/pull/4791)                 | remorses       | Bash output viewer with ANSI colors             |
 | `af206c22f` | 2025-12-28 | feat(tui): add /tools command to list available tools                | [shuvcode#199](https://github.com/Latitudes-Dev/shuvcode/pull/199) | gergesh        | Adds a dialog to list available MCP/tools       |
 | `c752cbfe6` | 2025-12-28 | feat(mcp): add command to restart all MCP servers                    | [#6219](https://github.com/sst/opencode/pull/6219)                 | Timorleiderman | Restart all MCP servers functionality           |
 | `552fab64d` | 2025-12-27 | feat: show skills in status and sidebar                              | [#6154](https://github.com/sst/opencode/pull/6154)                 | connorads      | Display skills in status bar and sidebar        |
