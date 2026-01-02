@@ -25,7 +25,6 @@ import { CodeSearchTool } from "./codesearch"
 import { Flag } from "@/flag/flag"
 import { Log } from "@/util/log"
 import { LspTool } from "./lsp"
-import { Permission } from "../permission"
 
 export namespace ToolRegistry {
   const log = Log.create({ service: "tool.registry" })
@@ -66,20 +65,7 @@ export namespace ToolRegistry {
         parameters: z.object(def.args),
         description: def.description,
         execute: async (args, ctx) => {
-          const result = await def.execute(args as any, {
-            ...ctx,
-            askPermission: async (input) => {
-              await Permission.ask({
-                type: input.type,
-                title: input.title,
-                pattern: input.pattern,
-                sessionID: ctx.sessionID,
-                messageID: ctx.messageID,
-                callID: ctx.callID,
-                metadata: input.metadata,
-              })
-            },
-          })
+          const result = await def.execute(args as any, ctx)
           return {
             title: "",
             output: result,
