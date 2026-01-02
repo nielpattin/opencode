@@ -1,6 +1,7 @@
 import { TextareaRenderable, ScrollBoxRenderable, TextAttributes, RGBA } from "@opentui/core"
 import { useTheme, selectedForeground } from "@tui/context/theme"
 import { useDialog } from "@tui/ui/dialog"
+import { useToast } from "@tui/ui/toast"
 import { useKeybind } from "@tui/context/keybind"
 import { useExit } from "@tui/context/exit"
 import { batch, createEffect, createMemo, For, Show, on, type JSX } from "solid-js"
@@ -27,6 +28,8 @@ export function DialogAskQuestion(props: DialogAskQuestionProps) {
   const dialog = useDialog()
   const keybind = useKeybind()
   const exit = useExit()
+  const toast = useToast()
+  let lastExitAttempt = 0
 
   // State for the wizard
   const [store, setStore] = createStore({
@@ -82,8 +85,18 @@ export function DialogAskQuestion(props: DialogAskQuestionProps) {
     if (evt.defaultPrevented || dialog.stack.length > 0) return
 
     if (keybind.match("app_exit", evt)) {
-      props.onCancel()
-      exit()
+      const now = Date.now()
+      if (now - lastExitAttempt < 2000) {
+        props.onCancel()
+        exit()
+        return
+      }
+      lastExitAttempt = now
+      toast.show({
+        variant: "warning",
+        message: "Press again to exit",
+        duration: 2000,
+      })
       return
     }
 
