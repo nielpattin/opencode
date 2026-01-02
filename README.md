@@ -42,6 +42,7 @@ Below is a summary of the added features along with their respective details.
 
 - `40546744f` feat(new tool): Adding a new tool to opencode -> askquestion tool
   - `8a504151d` feat(tui): overhaul AskQuestion dialog UX and enforce prompt constraints
+  - `9c9a0e292` fix(tui): implement double-confirmation exit safety in AskQuestion dialog
 
 ---
 
