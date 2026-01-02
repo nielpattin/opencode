@@ -19,7 +19,7 @@ export namespace AskQuestion {
     id: z.string().describe("Unique identifier for the question"),
     label: z.string().describe("Short tab label, e.g. 'UI Framework'"),
     question: z.string().describe("The full question to ask the user"),
-    options: z.array(OptionSchema).min(2).max(8).describe("2-8 suggested answer options"),
+    options: z.array(OptionSchema).min(3).max(5).describe("3-5 suggested answer options"),
     multiSelect: z.boolean().optional().describe("Allow selecting multiple options"),
   })
   export type Question = z.infer<typeof QuestionSchema>
@@ -47,7 +47,7 @@ export namespace AskQuestion {
         sessionID: z.string(),
         messageID: z.string(),
         callID: z.string(),
-        questions: z.array(QuestionSchema),
+        questions: z.array(QuestionSchema).min(3).max(5),
       }),
     ),
 

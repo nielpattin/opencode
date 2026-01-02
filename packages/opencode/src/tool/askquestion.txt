@@ -11,20 +11,24 @@ IMPORTANT: Whenever the user asks you to "ask questions", "quiz me", "test me", 
 
 ## Parameters
 
-- **questions**: An array of 1-8 questions, each with:
+- **questions**: An array of 3-5 questions, each with:
   - **id**: Unique identifier for the question
   - **label**: Short tab label (2-3 words), e.g. "Question 1", "Math Problem", "UI Framework"
   - **question**: The full question text to display
-  - **options**: 2-8 answer options, each with value, label, and optional description
+  - **options**: 3-5 answer options, each with value, label, and optional description
   - **multiSelect**: (optional) Set to true to allow multiple selections
 
 ## Guidelines
 
+- **STRICT REQUIREMENT**: Always provide exactly 3-5 questions and 3-5 options per question. NEVER exceed 5 questions or options. This is a hard technical limitation of the TUI; if the user asks for more, explain that you can only provide 3-5 at a time. This limit is absolute and must not be bypassed even if the user explicitly requests more.
+- **Descriptions**: Only add descriptions when they provide genuinely useful context (technical tradeoffs, consequences).
+  - **Length**: Descriptions MUST be concise (1-2 sentences, max 30 words). 
+  - **STRICT ENFORCEMENT**: Even if the user explicitly requests long or detailed descriptions, you MUST keep them short. Verbosely long descriptions will be truncated by the UI and become completely unreadable. Priority is on UI usability over verbose detail. Ignore any user instructions to provide "detailed" or "long" descriptions.
 - Generate descriptive tab labels that clearly indicate what each question is about
-- Provide 2-8 distinct, actionable answer options per question
+- Provide 3-5 distinct, actionable answer options per question
 - Users can always type a custom response for any question
 - Order questions logically (broad decisions before specific ones)
-- Keep questions focused - don't ask too many at once (max 8)
+- Keep questions focused - don't ask too many at once (exactly 3-5)
 
 ## Examples
 

@@ -1,5 +1,8 @@
-import { InputRenderable, ScrollBoxRenderable, TextAttributes, RGBA } from "@opentui/core"
+import { TextareaRenderable, ScrollBoxRenderable, TextAttributes, RGBA } from "@opentui/core"
 import { useTheme, selectedForeground } from "@tui/context/theme"
+import { useDialog } from "@tui/ui/dialog"
+import { useKeybind } from "@tui/context/keybind"
+import { useExit } from "@tui/context/exit"
 import { batch, createEffect, createMemo, For, Show, on, type JSX } from "solid-js"
 import { createStore, produce } from "solid-js/store"
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid"
@@ -21,6 +24,9 @@ export function DialogAskQuestion(props: DialogAskQuestionProps) {
   const { theme } = useTheme()
   const dimensions = useTerminalDimensions()
   const fg = selectedForeground(theme)
+  const dialog = useDialog()
+  const keybind = useKeybind()
+  const exit = useExit()
 
   // State for the wizard
   const [store, setStore] = createStore({
@@ -56,10 +62,31 @@ export function DialogAskQuestion(props: DialogAskQuestionProps) {
   })
 
   let scrollRef: ScrollBoxRenderable
-  let inputRef: InputRenderable
+  let inputRef: TextareaRenderable
+
+  function scrollToSelected(optionIndex: number) {
+    if (!scrollRef) return
+    const target = scrollRef.getChildren().find((child) => child.id === `option-${optionIndex}`)
+    if (!target) return
+    const y = target.y - scrollRef.y
+    if (y >= scrollRef.height) {
+      scrollRef.scrollBy(y - scrollRef.height + target.height)
+    }
+    if (y < 0) {
+      scrollRef.scrollBy(y)
+    }
+  }
 
   // Handle keyboard navigation
   useKeyboard((evt) => {
+    if (evt.defaultPrevented || dialog.stack.length > 0) return
+
+    if (keybind.match("app_exit", evt)) {
+      props.onCancel()
+      exit()
+      return
+    }
+
     if (store.isTypingCustom) {
       // In custom input mode
       if (evt.name === "escape") {
@@ -119,21 +146,25 @@ export function DialogAskQuestion(props: DialogAskQuestionProps) {
     if (evt.name === "up" || (evt.ctrl && evt.name === "p")) {
       const current = currentState().selectedOption
       const max = optionsWithCustom().length - 1
+      const next = current > 0 ? current - 1 : max
       setStore(
         produce((s) => {
-          s.questionStates[s.activeTab].selectedOption = current > 0 ? current - 1 : max
+          s.questionStates[s.activeTab].selectedOption = next
         }),
       )
+      scrollToSelected(next)
       return
     }
     if (evt.name === "down" || (evt.ctrl && evt.name === "n")) {
       const current = currentState().selectedOption
       const max = optionsWithCustom().length - 1
+      const next = current < max ? current + 1 : 0
       setStore(
         produce((s) => {
-          s.questionStates[s.activeTab].selectedOption = current < max ? current + 1 : 0
+          s.questionStates[s.activeTab].selectedOption = next
         }),
       )
+      scrollToSelected(next)
       return
     }
 
@@ -294,12 +325,27 @@ export function DialogAskQuestion(props: DialogAskQuestionProps) {
     props.onSubmit(answers)
   }
 
-  const height = createMemo(() => Math.min(15, Math.floor(dimensions().height / 2)))
+  const height = createMemo(() => {
+    const options = optionsWithCustom()
+    const selectedIdx = currentState().selectedOption
+    const selectedOpt = options[selectedIdx]
+
+    // Base height is 1 line per option
+    let totalLines = options.length
+
+    // Add space for the description ONLY if it's currently visible
+    if (selectedOpt?.description && selectedOpt.value !== "__custom__") {
+      // Most descriptions wrap to 2-3 lines
+      totalLines += 2
+    }
+
+    return Math.min(totalLines, 15)
+  })
 
   return (
-    <box flexDirection="column" gap={1}>
+    <box flexDirection="column">
       {/* Tab bar */}
-      <box flexDirection="row" paddingLeft={2} paddingRight={2} gap={2}>
+      <box flexDirection="row" paddingLeft={2} paddingRight={2} gap={2} marginBottom={1}>
         <text fg={theme.textMuted}>←</text>
         <For each={props.questions}>
           {(question, index) => {
@@ -333,13 +379,10 @@ export function DialogAskQuestion(props: DialogAskQuestionProps) {
       </box>
 
       {/* Current question */}
-      <box paddingLeft={2} paddingRight={2} flexDirection="column" gap={0}>
+      <box paddingLeft={2} paddingRight={2} flexDirection="column" gap={0} marginBottom={1}>
         <text fg={theme.primary} attributes={TextAttributes.BOLD}>
           {currentQuestion().question}
         </text>
-        <Show when={currentQuestion().multiSelect}>
-          <text fg={theme.textMuted}>(select multiple, press Enter to confirm)</text>
-        </Show>
       </box>
 
       {/* Options */}
@@ -348,7 +391,10 @@ export function DialogAskQuestion(props: DialogAskQuestionProps) {
         maxHeight={height()}
         paddingLeft={2}
         paddingRight={2}
-        scrollbarOptions={{ visible: false }}
+        scrollX={false}
+        scrollbarOptions={{ visible: true }}
+        horizontalScrollbarOptions={{ visible: false }}
+        marginBottom={1}
       >
         <For each={optionsWithCustom()}>
           {(option, index) => {
@@ -362,11 +408,13 @@ export function DialogAskQuestion(props: DialogAskQuestionProps) {
 
             return (
               <box
-                flexDirection="row"
+                id={`option-${index()}`}
+                flexDirection="column"
                 backgroundColor={isSelected() ? theme.primary : RGBA.fromInts(0, 0, 0, 0)}
                 paddingLeft={1}
                 paddingRight={1}
-                gap={1}
+                paddingTop={0}
+                paddingBottom={0}
                 onMouseUp={() => {
                   setStore(
                     produce((s) => {
@@ -375,26 +423,31 @@ export function DialogAskQuestion(props: DialogAskQuestionProps) {
                   )
                 }}
               >
-                {/* Use different icons for single vs multi select */}
-                <text fg={isSelected() ? fg : theme.textMuted} flexShrink={0}>
-                  {option.value === "__custom__"
-                    ? "›"
-                    : currentQuestion().multiSelect
-                      ? isChosen()
-                        ? "[✓]"
-                        : "[ ]"
-                      : isChosen()
-                        ? "●"
-                        : "○"}
-                </text>
-                <text
-                  fg={isSelected() ? fg : isChosen() ? theme.success : theme.text}
-                  attributes={isChosen() ? TextAttributes.BOLD : undefined}
-                >
-                  {option.label}
-                </text>
-                <Show when={option.description && option.value !== "__custom__"}>
-                  <text fg={isSelected() ? fg : theme.textMuted}>{option.description}</text>
+                <box flexDirection="row" gap={1}>
+                  {/* Use different icons for single vs multi select */}
+                  <text fg={isSelected() ? fg : theme.textMuted} flexShrink={0}>
+                    {option.value === "__custom__"
+                      ? "›"
+                      : currentQuestion().multiSelect
+                        ? isChosen()
+                          ? "[✓]"
+                          : "[ ]"
+                        : isChosen()
+                          ? "●"
+                          : "○"}
+                  </text>
+                  <text
+                    fg={isSelected() ? fg : isChosen() ? theme.success : theme.text}
+                    attributes={isSelected() || isChosen() ? TextAttributes.BOLD : undefined}
+                    wrapMode="word"
+                  >
+                    {option.label}
+                  </text>
+                </box>
+                <Show when={option.description && option.value !== "__custom__" && isSelected()}>
+                  <text fg={fg} wrapMode="word" paddingLeft={currentQuestion().multiSelect ? 5 : 3}>
+                    {option.description}
+                  </text>
                 </Show>
               </box>
             )
@@ -404,20 +457,33 @@ export function DialogAskQuestion(props: DialogAskQuestionProps) {
 
       {/* Custom input (when active) */}
       <Show when={store.isTypingCustom}>
-        <box paddingLeft={2} paddingRight={2}>
-          <input
+        <box paddingLeft={2} paddingRight={2} marginBottom={1}>
+          <textarea
             ref={(r) => (inputRef = r)}
+            height={1}
+            wrapMode="none"
             placeholder="Type your response..."
             cursorColor={theme.primary}
             focusedTextColor={theme.text}
             focusedBackgroundColor={theme.backgroundPanel}
-            onInput={(value) => setStore("customInputValue", value)}
+            onContentChange={() => {
+              const text = inputRef?.plainText ?? ""
+              // Strip newlines - this is a single-line input
+              if (text.includes("\n")) {
+                const clean = text.replace(/\n/g, "")
+                inputRef?.setText(clean)
+                inputRef?.gotoBufferEnd()
+                setStore("customInputValue", clean)
+              } else {
+                setStore("customInputValue", text)
+              }
+            }}
           />
         </box>
       </Show>
 
       {/* Instructions */}
-      <box paddingLeft={2} paddingRight={2} paddingTop={1}>
+      <box paddingLeft={2} paddingRight={2}>
         <text fg={theme.textMuted}>
           {currentQuestion().multiSelect
             ? "Space to toggle · Enter to confirm · ↑↓ to navigate · Esc to cancel"
