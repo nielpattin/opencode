@@ -502,6 +502,45 @@ export namespace Server {
         },
       )
       .get(
+        "/tool/list",
+        describeRoute({
+          summary: "List tools with status",
+          description: "Get a list of all tools with their enabled/disabled status based on permission rules.",
+          operationId: "tool.status",
+          responses: {
+            200: {
+              description: "Tools with status",
+              content: {
+                "application/json": {
+                  schema: resolver(
+                    z
+                      .array(
+                        z.object({
+                          id: z.string(),
+                          enabled: z.boolean(),
+                        }),
+                      )
+                      .meta({ ref: "ToolStatusList" }),
+                  ),
+                },
+              },
+            },
+          },
+        }),
+        async (c) => {
+          const config = await Config.get()
+          const ids = await ToolRegistry.ids()
+          const ruleset = PermissionNext.fromConfig(config.permission ?? {})
+          const disabledSet = PermissionNext.disabled(ids, ruleset)
+          return c.json(
+            ids.map((id) => ({
+              id,
+              enabled: !disabledSet.has(id),
+            })),
+          )
+        },
+      )
+      .get(
         "/experimental/tool",
         describeRoute({
           summary: "List tools",
