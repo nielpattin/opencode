@@ -198,6 +198,7 @@ export namespace MessageV2 {
         write: z.number(),
       }),
     }),
+    tps: z.number().optional(),
   }).meta({
     ref: "StepFinishPart",
   })
@@ -370,6 +371,7 @@ export namespace MessageV2 {
         read: z.number(),
         write: z.number(),
       }),
+      tps: z.number().optional(),
     }),
     finish: z.string().optional(),
   }).meta({

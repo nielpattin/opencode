@@ -60,6 +60,7 @@ export function Sidebar(props: { sessionID: string }) {
     return {
       tokens: total.toLocaleString(),
       percentage: model?.limit.context ? Math.round((total / model.limit.context) * 100) : null,
+      tps: (last.tokens as { tps?: number }).tps,
     }
   })
 
@@ -98,6 +99,9 @@ export function Sidebar(props: { sessionID: string }) {
               <text fg={theme.textMuted}>{context()?.tokens ?? 0} tokens</text>
               <text fg={theme.textMuted}>{context()?.percentage ?? 0}% used</text>
               <text fg={theme.textMuted}>{cost()} spent</text>
+              <Show when={context()?.tps}>
+                <text fg={theme.textMuted}>{context()!.tps!.toFixed(1)} tok/s</text>
+              </Show>
             </box>
             <Show when={mcpEntries().length > 0}>
               <box>

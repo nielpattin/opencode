@@ -33,6 +33,7 @@ import { DialogAlert } from "../../ui/dialog-alert"
 
 export type PromptProps = {
   sessionID?: string
+  visible?: boolean
   disabled?: boolean
   onSubmit?: () => void
   ref?: (ref: PromptRef) => void
@@ -204,7 +205,11 @@ export function Prompt(props: PromptProps) {
 
       syncedSessionID = sessionID
 
-      if (msg.agent) local.agent.set(msg.agent)
+      // Only set agent if it's a primary agent (not a subagent)
+      const isPrimaryAgent = local.agent.list().some((x) => x.name === msg.agent)
+      if (msg.agent && isPrimaryAgent) {
+        local.agent.set(msg.agent)
+      }
       if (msg.model) local.model.set(msg.model)
       if (msg.variant) local.model.variant.set(msg.variant)
     }
@@ -371,7 +376,8 @@ export function Prompt(props: PromptProps) {
   })
 
   createEffect(() => {
-    input.focus()
+    if (props.visible !== false) input?.focus()
+    if (props.visible === false) input?.blur()
   })
 
   onMount(() => {
@@ -818,7 +824,7 @@ export function Prompt(props: PromptProps) {
         agentStyleId={agentStyleId}
         promptPartTypeId={() => promptPartTypeId}
       />
-      <box ref={(r) => (anchor = r)}>
+      <box ref={(r) => (anchor = r)} visible={props.visible !== false}>
         <box
           border={["left"]}
           borderColor={highlight()}

@@ -17,9 +17,20 @@ export const GlobTool = Tool.define("glob", {
         `The directory to search in. If not specified, the current working directory will be used. IMPORTANT: Omit this field to use the default directory. DO NOT enter "undefined" or "null" - simply omit it for the default behavior. Must be a valid directory path if provided.`,
       ),
   }),
-  async execute(params) {
-    const rawPath = params.path ? Filesystem.toNativePath(params.path) : Instance.directory
-    const search = path.isAbsolute(rawPath) ? rawPath : path.resolve(Instance.directory, rawPath)
+  async execute(params, ctx) {
+    await ctx.ask({
+      permission: "glob",
+      patterns: [params.pattern],
+      always: ["*"],
+      metadata: {
+        pattern: params.pattern,
+        path: params.path,
+      },
+    })
+
+    let search = params.path ?? Instance.directory
+    search = path.isAbsolute(search) ? search : path.resolve(Instance.directory, search)
+    search = Filesystem.toNativePath(search)
 
     const limit = 100
     const files = []
@@ -55,7 +66,7 @@ export const GlobTool = Tool.define("glob", {
     }
 
     return {
-      title: Filesystem.safeRelative(Instance.worktree, search),
+      title: path.relative(Instance.worktree, search),
       metadata: {
         count: files.length,
         truncated,

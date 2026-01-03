@@ -4,7 +4,6 @@ import * as path from "path"
 import DESCRIPTION from "./ls.txt"
 import { Instance } from "../project/instance"
 import { Ripgrep } from "../file/ripgrep"
-import { Filesystem } from "../util/filesystem"
 
 export const IGNORE_PATTERNS = [
   "node_modules/",
@@ -41,8 +40,17 @@ export const ListTool = Tool.define("list", {
     path: z.string().describe("The absolute path to the directory to list (must be absolute, not relative)").optional(),
     ignore: z.array(z.string()).describe("List of glob patterns to ignore").optional(),
   }),
-  async execute(params) {
-    const searchPath = path.resolve(Instance.directory, Filesystem.toNativePath(params.path || "."))
+  async execute(params, ctx) {
+    const searchPath = path.resolve(Instance.directory, params.path || ".")
+
+    await ctx.ask({
+      permission: "list",
+      patterns: [searchPath],
+      always: ["*"],
+      metadata: {
+        path: searchPath,
+      },
+    })
 
     const ignoreGlobs = IGNORE_PATTERNS.map((p) => `!${p}*`).concat(params.ignore?.map((p) => `!${p}`) || [])
     const files = []
@@ -100,7 +108,7 @@ export const ListTool = Tool.define("list", {
     const output = `${searchPath}/\n` + renderDir(".", 0)
 
     return {
-      title: Filesystem.safeRelative(Instance.worktree, searchPath),
+      title: path.relative(Instance.worktree, searchPath),
       metadata: {
         count: files.length,
         truncated: files.length >= LIMIT,

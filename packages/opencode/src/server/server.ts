@@ -10,7 +10,7 @@ import { proxy } from "hono/proxy"
 import { Session } from "../session"
 import z from "zod"
 import { Provider } from "../provider/provider"
-import { filter, mapValues, sortBy, pipe, mergeDeep } from "remeda"
+import { filter, mapValues, sortBy, pipe } from "remeda"
 import { NamedError } from "@opencode-ai/util/error"
 import { ModelsDev } from "../provider/models"
 import { Ripgrep } from "../file/ripgrep"
@@ -18,10 +18,8 @@ import { Config } from "../config/config"
 import { File } from "../file"
 import { LSP } from "../lsp"
 import { Format } from "../format"
-import { Skill } from "../skill"
 import { MessageV2 } from "../session/message-v2"
 import { TuiRoute } from "./tui"
-import { Permission } from "../permission"
 import { Instance } from "../project/instance"
 import { Vcs } from "../project/vcs"
 import { Agent } from "../agent/agent"
@@ -42,14 +40,13 @@ import { MCP } from "../mcp"
 import { Storage } from "../storage/storage"
 import type { ContentfulStatusCode } from "hono/utils/http-status"
 import { TuiEvent } from "@/cli/cmd/tui/event"
-import { Wildcard } from "@/util/wildcard"
 import { Snapshot } from "@/snapshot"
 import { SessionSummary } from "@/session/summary"
 import { SessionStatus } from "@/session/status"
 import { upgradeWebSocket, websocket } from "hono/bun"
 import { errors } from "./error"
 import { Pty } from "@/pty"
-import { AskQuestion } from "@/askquestion"
+import { PermissionNext } from "@/permission/next"
 import { Installation } from "@/installation"
 import { MDNS } from "./mdns"
 
@@ -476,52 +473,6 @@ export namespace Server {
           const config = c.req.valid("json")
           await Config.update(config)
           return c.json(config)
-        },
-      )
-      .get(
-        "/tool/list",
-        describeRoute({
-          summary: "List tools",
-          description: "Get a list of all available tools with their enabled status.",
-          operationId: "tool.list",
-          responses: {
-            200: {
-              description: "Tool list",
-              content: {
-                "application/json": {
-                  schema: resolver(
-                    z.array(
-                      z.object({
-                        id: z.string(),
-                        enabled: z.boolean(),
-                      }),
-                    ),
-                  ),
-                },
-              },
-            },
-          },
-        }),
-        async (c) => {
-          const builtinIds = await ToolRegistry.ids()
-          const mcpTools = await MCP.tools()
-          const mcpIds = Object.keys(mcpTools)
-          // Combine and filter out 'invalid' tool
-          const allIds = [...builtinIds.filter((id) => id !== "invalid"), ...mcpIds]
-
-          // Get enabled status based on agent tools config
-          const defaultAgentName = await Agent.defaultAgent()
-          const agent = await Agent.get(defaultAgentName)
-          const enabledTools = agent
-            ? mergeDeep(agent.tools, await ToolRegistry.enabled(agent))
-            : ({} as Record<string, boolean>)
-
-          return c.json(
-            allIds.map((id) => ({
-              id,
-              enabled: Wildcard.all(id, enabledTools) !== false,
-            })),
-          )
         },
       )
       .get(
@@ -1399,9 +1350,7 @@ export namespace Server {
           return stream(c, async (stream) => {
             const sessionID = c.req.valid("param").sessionID
             const body = c.req.valid("json")
-            const clientHeader = c.req.header("x-opencode-client")
-            const client = clientHeader === "tui" ? "tui" : "web"
-            const msg = await SessionPrompt.prompt({ ...body, sessionID, client })
+            const msg = await SessionPrompt.prompt({ ...body, sessionID })
             stream.write(JSON.stringify(msg))
           })
         },
@@ -1433,9 +1382,7 @@ export namespace Server {
           return stream(c, async () => {
             const sessionID = c.req.valid("param").sessionID
             const body = c.req.valid("json")
-            const clientHeader = c.req.header("x-opencode-client")
-            const client = clientHeader === "tui" ? "tui" : "web"
-            SessionPrompt.prompt({ ...body, sessionID, client })
+            SessionPrompt.prompt({ ...body, sessionID })
           })
         },
       )
@@ -1472,9 +1419,8 @@ export namespace Server {
         async (c) => {
           const sessionID = c.req.valid("param").sessionID
           const body = c.req.valid("json")
-          const clientHeader = c.req.header("x-opencode-client")
-          const client = clientHeader === "tui" ? "tui" : "web"
-          await SessionPrompt.command({ ...body, sessionID, client })
+          const msg = await SessionPrompt.command({ ...body, sessionID })
+          return c.json(msg)
         },
       )
       .post(
@@ -1505,9 +1451,7 @@ export namespace Server {
         async (c) => {
           const sessionID = c.req.valid("param").sessionID
           const body = c.req.valid("json")
-          const clientHeader = c.req.header("x-opencode-client")
-          const client = clientHeader === "tui" ? "tui" : "web"
-          const msg = await SessionPrompt.shell({ ...body, sessionID, client })
+          const msg = await SessionPrompt.shell({ ...body, sessionID })
           return c.json(msg)
         },
       )
@@ -1580,6 +1524,7 @@ export namespace Server {
         "/session/:sessionID/permissions/:permissionID",
         describeRoute({
           summary: "Respond to permission",
+          deprecated: true,
           description: "Approve or deny a permission request from the AI assistant.",
           operationId: "permission.respond",
           responses: {
@@ -1601,28 +1546,25 @@ export namespace Server {
             permissionID: z.string(),
           }),
         ),
-        validator("json", z.object({ response: Permission.Response })),
+        validator("json", z.object({ response: PermissionNext.Reply })),
         async (c) => {
           const params = c.req.valid("param")
-          const sessionID = params.sessionID
-          const permissionID = params.permissionID
-          Permission.respond({
-            sessionID,
-            permissionID,
-            response: c.req.valid("json").response,
+          PermissionNext.reply({
+            requestID: params.permissionID,
+            reply: c.req.valid("json").response,
           })
           return c.json(true)
         },
       )
       .post(
-        "/askquestion/respond",
+        "/permission/:requestID/reply",
         describeRoute({
-          summary: "Respond to askquestion",
-          description: "Submit answers to a pending askquestion tool call.",
-          operationId: "askquestion.respond",
+          summary: "Respond to permission request",
+          description: "Approve or deny a permission request from the AI assistant.",
+          operationId: "permission.reply",
           responses: {
             200: {
-              description: "Response submitted successfully",
+              description: "Permission processed successfully",
               content: {
                 "application/json": {
                   schema: resolver(z.boolean()),
@@ -1633,54 +1575,19 @@ export namespace Server {
           },
         }),
         validator(
-          "json",
+          "param",
           z.object({
-            sessionID: z.string(),
-            callID: z.string(),
-            answers: AskQuestion.AnswerSchema.array(),
+            requestID: z.string(),
           }),
         ),
+        validator("json", z.object({ reply: PermissionNext.Reply })),
         async (c) => {
-          const { callID, answers } = c.req.valid("json")
-          // The partID is the callID for the askquestion
-          const success = AskQuestion.respond(callID, answers)
-          if (!success) {
-            throw new Error("No pending askquestion found with this ID")
-          }
-          return c.json(true)
-        },
-      )
-      .post(
-        "/askquestion/cancel",
-        describeRoute({
-          summary: "Cancel askquestion",
-          description: "Cancel a pending askquestion tool call.",
-          operationId: "askquestion.cancel",
-          responses: {
-            200: {
-              description: "Cancelled successfully",
-              content: {
-                "application/json": {
-                  schema: resolver(z.boolean()),
-                },
-              },
-            },
-            ...errors(400, 404),
-          },
-        }),
-        validator(
-          "json",
-          z.object({
-            sessionID: z.string(),
-            callID: z.string(),
-          }),
-        ),
-        async (c) => {
-          const { callID } = c.req.valid("json")
-          const success = AskQuestion.cancel(callID)
-          if (!success) {
-            throw new Error("No pending askquestion found with this ID")
-          }
+          const params = c.req.valid("param")
+          const json = c.req.valid("json")
+          await PermissionNext.reply({
+            requestID: params.requestID,
+            reply: json.reply,
+          })
           return c.json(true)
         },
       )
@@ -1695,14 +1602,14 @@ export namespace Server {
               description: "List of pending permissions",
               content: {
                 "application/json": {
-                  schema: resolver(Permission.Info.array()),
+                  schema: resolver(PermissionNext.Request.array()),
                 },
               },
             },
           },
         }),
         async (c) => {
-          const permissions = Permission.list()
+          const permissions = await PermissionNext.list()
           return c.json(permissions)
         },
       )
@@ -2425,27 +2332,6 @@ export namespace Server {
           return c.json(await Format.status())
         },
       )
-      .get(
-        "/skill",
-        describeRoute({
-          summary: "Get skill status",
-          description: "Get all loaded skills",
-          operationId: "skill.status",
-          responses: {
-            200: {
-              description: "List of loaded skills",
-              content: {
-                "application/json": {
-                  schema: resolver(Skill.Info.array()),
-                },
-              },
-            },
-          },
-        }),
-        async (c) => {
-          return c.json(await Skill.status())
-        },
-      )
       .post(
         "/tui/append-prompt",
         describeRoute({
@@ -2804,12 +2690,44 @@ export namespace Server {
         },
       )
       .all("/*", async (c) => {
-        return proxy(`https://app.opencode.ai${c.req.path}`, {
+        const path = c.req.path
+        const response = await proxy(`https://app.opencode.ai${path}`, {
           ...c.req,
           headers: {
             host: "app.opencode.ai",
           },
         })
+        // Cloudflare doesn't return Content-Type for static assets, so we need to add it
+        const mimeTypes: Record<string, string> = {
+          ".js": "application/javascript",
+          ".mjs": "application/javascript",
+          ".css": "text/css",
+          ".json": "application/json",
+          ".wasm": "application/wasm",
+          ".svg": "image/svg+xml",
+          ".png": "image/png",
+          ".jpg": "image/jpeg",
+          ".jpeg": "image/jpeg",
+          ".gif": "image/gif",
+          ".ico": "image/x-icon",
+          ".webp": "image/webp",
+          ".woff": "font/woff",
+          ".woff2": "font/woff2",
+          ".ttf": "font/ttf",
+          ".eot": "application/vnd.ms-fontobject",
+        }
+        for (const [ext, mime] of Object.entries(mimeTypes)) {
+          if (path.endsWith(ext)) {
+            const headers = new Headers(response.headers)
+            headers.set("Content-Type", mime)
+            return new Response(response.body, {
+              status: response.status,
+              statusText: response.statusText,
+              headers,
+            })
+          }
+        }
+        return response
       }),
   )
 

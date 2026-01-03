@@ -16,9 +16,9 @@ import { SessionPrompt } from "./prompt"
 import { fn } from "@/util/fn"
 import { Command } from "../command"
 import { Snapshot } from "@/snapshot"
-import { AskQuestion } from "@/askquestion"
 
 import type { Provider } from "@/provider/provider"
+import { PermissionNext } from "@/permission/next"
 
 export namespace Session {
   const log = Log.create({ service: "session" })
@@ -63,6 +63,7 @@ export namespace Session {
         compacting: z.number().optional(),
         archived: z.number().optional(),
       }),
+      permission: PermissionNext.Ruleset.optional(),
       revert: z
         .object({
           messageID: z.string(),
@@ -127,6 +128,7 @@ export namespace Session {
       .object({
         parentID: Identifier.schema("session").optional(),
         title: z.string().optional(),
+        permission: Info.shape.permission,
       })
       .optional(),
     async (input) => {
@@ -134,6 +136,7 @@ export namespace Session {
         parentID: input?.parentID,
         directory: Instance.directory,
         title: input?.title,
+        permission: input?.permission,
       })
     },
   )
@@ -175,7 +178,13 @@ export namespace Session {
     })
   })
 
-  export async function createNext(input: { id?: string; title?: string; parentID?: string; directory: string }) {
+  export async function createNext(input: {
+    id?: string
+    title?: string
+    parentID?: string
+    directory: string
+    permission?: PermissionNext.Ruleset
+  }) {
     const result: Info = {
       id: Identifier.descending("session", input.id),
       version: Installation.VERSION,
@@ -183,6 +192,7 @@ export namespace Session {
       directory: input.directory,
       parentID: input.parentID,
       title: input.title ?? createDefaultTitle(!!input.parentID),
+      permission: input.permission,
       time: {
         created: Date.now(),
         updated: Date.now(),
@@ -309,7 +319,6 @@ export namespace Session {
         await Storage.remove(msg)
       }
       await Storage.remove(["session", project.id, sessionID])
-      AskQuestion.cleanup(sessionID)
       Bus.publish(Event.Deleted, {
         info: session,
       })
@@ -373,7 +382,6 @@ export namespace Session {
   export const updatePart = fn(UpdatePartInput, async (input) => {
     const part = "delta" in input ? input.part : input
     const delta = "delta" in input ? input.delta : undefined
-
     await Storage.write(["part", part.messageID, part.id], part)
     Bus.publish(MessageV2.Event.PartUpdated, {
       part,

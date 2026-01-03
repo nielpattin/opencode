@@ -1,10 +1,10 @@
 import z from "zod"
 import { Tool } from "./tool"
 import { Ripgrep } from "../file/ripgrep"
+import { Filesystem } from "../util/filesystem"
 
 import DESCRIPTION from "./grep.txt"
 import { Instance } from "../project/instance"
-import { Filesystem } from "../util/filesystem"
 
 const MAX_LINE_LENGTH = 2000
 
@@ -15,12 +15,23 @@ export const GrepTool = Tool.define("grep", {
     path: z.string().optional().describe("The directory to search in. Defaults to the current working directory."),
     include: z.string().optional().describe('File pattern to include in the search (e.g. "*.js", "*.{ts,tsx}")'),
   }),
-  async execute(params) {
+  async execute(params, ctx) {
     if (!params.pattern) {
       throw new Error("pattern is required")
     }
 
-    const searchPath = params.path ? Filesystem.toNativePath(params.path) : Instance.directory
+    await ctx.ask({
+      permission: "grep",
+      patterns: [params.pattern],
+      always: ["*"],
+      metadata: {
+        pattern: params.pattern,
+        path: params.path,
+        include: params.include,
+      },
+    })
+
+    const searchPath = Filesystem.toNativePath(params.path || Instance.directory)
 
     const rgPath = await Ripgrep.filepath()
     const args = ["-nH", "--field-match-separator=|", "--regexp", params.pattern]

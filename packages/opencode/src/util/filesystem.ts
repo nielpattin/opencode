@@ -15,6 +15,13 @@ export namespace Filesystem {
     return p
   }
 
+  // Convert Windows paths to POSIX paths (for Git Bash compatibility)
+  export function toPosixPath(p: string): string {
+    if (process.platform !== "win32") return p
+    // Convert C:\foo\bar to /c/foo/bar
+    return p.replace(/^([a-zA-Z]):/, (_, d) => `/${d.toLowerCase()}`).replace(/\\/g, "/")
+  }
+
   // Normalize path casing on Windows using filesystem
   export function normalizePath(p: string): string {
     if (process.platform !== "win32") return p
