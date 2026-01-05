@@ -1,7 +1,6 @@
 import z from "zod"
 import { Tool } from "./tool"
 import { Ripgrep } from "../file/ripgrep"
-import { Filesystem } from "../util/filesystem"
 
 import DESCRIPTION from "./grep.txt"
 import { Instance } from "../project/instance"
@@ -31,7 +30,7 @@ export const GrepTool = Tool.define("grep", {
       },
     })
 
-    const searchPath = Filesystem.toNativePath(params.path || Instance.directory)
+    const searchPath = params.path || Instance.directory
 
     const rgPath = await Ripgrep.filepath()
     const args = ["-nH", "--field-match-separator=|", "--regexp", params.pattern]

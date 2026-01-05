@@ -206,7 +206,6 @@ export namespace MessageV2 {
         write: z.number(),
       }),
     }),
-    tps: z.number().optional(),
   }).meta({
     ref: "StepFinishPart",
   })
@@ -315,7 +314,6 @@ export namespace MessageV2 {
     }),
     system: z.string().optional(),
     tools: z.record(z.string(), z.boolean()).optional(),
-    client: z.enum(["tui", "web", "desktop"]).optional(),
     variant: z.string().optional(),
   }).meta({
     ref: "UserMessage",
@@ -379,7 +377,6 @@ export namespace MessageV2 {
         read: z.number(),
         write: z.number(),
       }),
-      tps: z.number().optional(),
     }),
     finish: z.string().optional(),
   }).meta({

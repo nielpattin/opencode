@@ -7,7 +7,6 @@ export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
   name: "SDK",
   init: (props: { url: string; directory?: string }) => {
     const abort = new AbortController()
-    process.env.OPENCODE_CLIENT_TYPE = "tui"
     const sdk = createOpencodeClient({
       baseUrl: props.url,
       signal: abort.signal,

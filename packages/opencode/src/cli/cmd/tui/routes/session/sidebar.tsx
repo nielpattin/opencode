@@ -25,13 +25,10 @@ export function Sidebar(props: { sessionID: string }) {
     diff: true,
     todo: true,
     lsp: true,
-    skill: true,
   })
 
   // Sort MCP servers alphabetically for consistent display order
   const mcpEntries = createMemo(() => Object.entries(sync.data.mcp).sort(([a], [b]) => a.localeCompare(b)))
-
-  const skillEntries = createMemo(() => sync.data.skill.toSorted((a, b) => a.name.localeCompare(b.name)))
 
   // Count connected and error MCP servers for collapsed header display
   const connectedMcpCount = createMemo(() => mcpEntries().filter(([_, item]) => item.status === "connected").length)
@@ -60,7 +57,6 @@ export function Sidebar(props: { sessionID: string }) {
     return {
       tokens: total.toLocaleString(),
       percentage: model?.limit.context ? Math.round((total / model.limit.context) * 100) : null,
-      tps: (last.tokens as { tps?: number }).tps,
     }
   })
 
@@ -99,9 +95,6 @@ export function Sidebar(props: { sessionID: string }) {
               <text fg={theme.textMuted}>{context()?.tokens ?? 0} tokens</text>
               <text fg={theme.textMuted}>{context()?.percentage ?? 0}% used</text>
               <text fg={theme.textMuted}>{cost()} spent</text>
-              <Show when={context()?.tps}>
-                <text fg={theme.textMuted}>{context()!.tps!.toFixed(1)} tok/s</text>
-              </Show>
             </box>
             <Show when={mcpEntries().length > 0}>
               <box>
@@ -207,34 +200,6 @@ export function Sidebar(props: { sessionID: string }) {
                 </For>
               </Show>
             </box>
-            <Show when={skillEntries().length > 0}>
-              <box>
-                <box
-                  flexDirection="row"
-                  gap={1}
-                  onMouseDown={() => skillEntries().length > 2 && setExpanded("skill", !expanded.skill)}
-                >
-                  <Show when={skillEntries().length > 2}>
-                    <text fg={theme.text}>{expanded.skill ? "▼" : "▶"}</text>
-                  </Show>
-                  <text fg={theme.text}>
-                    <b>Skills</b>
-                  </text>
-                </box>
-                <Show when={skillEntries().length <= 2 || expanded.skill}>
-                  <For each={skillEntries()}>
-                    {(item) => (
-                      <box flexDirection="row" gap={1}>
-                        <text flexShrink={0} style={{ fg: theme.success }}>
-                          •
-                        </text>
-                        <text fg={theme.textMuted}>{item.name}</text>
-                      </box>
-                    )}
-                  </For>
-                </Show>
-              </box>
-            </Show>
             <Show when={todo().length > 0 && todo().some((t) => t.status !== "completed")}>
               <box>
                 <box

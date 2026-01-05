@@ -12,7 +12,6 @@ import { $ } from "bun"
 import { Filesystem } from "@/util/filesystem"
 import { fileURLToPath } from "url"
 import { Flag } from "@/flag/flag.ts"
-import { ptyToText } from "ghostty-opentui"
 import { Shell } from "@/shell/shell"
 
 import { BashArity } from "@/permission/arity"
@@ -118,7 +117,10 @@ export const BashTool = Tool.define("bash", async () => {
             log.info("resolved path", { arg, resolved })
             if (resolved) {
               // Git Bash on Windows returns Unix-style paths like /c/Users/...
-              const normalized = Filesystem.toNativePath(resolved)
+              const normalized =
+                process.platform === "win32" && resolved.match(/^\/[a-z]\//)
+                  ? resolved.replace(/^\/([a-z])\//, (_, drive) => `${drive.toUpperCase()}:\\`).replace(/\//g, "\\")
+                  : resolved
               if (!Filesystem.contains(Instance.directory, normalized)) directories.add(normalized)
             }
           }
@@ -153,16 +155,6 @@ export const BashTool = Tool.define("bash", async () => {
         shell,
         cwd,
         env: {
-          // Force color output in as many tools as possible
-          FORCE_COLOR: "3",
-          CLICOLOR: "1",
-          CLICOLOR_FORCE: "1",
-          TERM: "xterm-256color",
-          TERM_PROGRAM: "bash-tool",
-          TERM_COLOR: "1",
-          PY_COLORS: "1",
-          ANSICON: "1",
-          COLORTERM: "truecolor",
           ...process.env,
         },
         stdio: ["ignore", "pipe", "pipe"],
@@ -263,7 +255,7 @@ export const BashTool = Tool.define("bash", async () => {
           exit: proc.exitCode,
           description: params.description,
         },
-        output: ptyToText(output, { rows: 120, cols: 256 }),
+        output,
       }
     },
   }

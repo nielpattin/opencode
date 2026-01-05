@@ -12,7 +12,6 @@ import { SyncProvider, useSync } from "@tui/context/sync"
 import { LocalProvider, useLocal } from "@tui/context/local"
 import { DialogModel, useConnected } from "@tui/component/dialog-model"
 import { DialogMcp } from "@tui/component/dialog-mcp"
-import { DialogTools } from "@tui/component/dialog-tools"
 import { DialogStatus } from "@tui/component/dialog-status"
 import { DialogThemeList } from "@tui/component/dialog-theme-list"
 import { DialogHelp } from "./ui/dialog-help"
@@ -361,59 +360,6 @@ function App() {
       category: "Agent",
       onSelect: () => {
         dialog.replace(() => <DialogMcp />)
-      },
-    },
-    {
-      title: "List tools",
-      value: "tool.list",
-      category: "Agent",
-      onSelect: () => {
-        dialog.replace(() => <DialogTools />)
-      },
-    },
-    {
-      title: "Restart MCPs",
-      value: "mcp.restart",
-      category: "Agent",
-      onSelect: async () => {
-        dialog.clear()
-        toast.show({
-          message: "Restarting MCP servers...",
-          variant: "info",
-        })
-        try {
-          const mcpData = sync.data.mcp ?? {}
-          const serversToRestart = Object.entries(mcpData)
-            .filter(([, status]) => status.status === "connected" || status.status === "failed")
-            .map(([name]) => name)
-
-          if (serversToRestart.length === 0) {
-            toast.show({
-              message: "No MCP servers to restart",
-              variant: "info",
-            })
-            return
-          }
-
-          // Disconnect all servers
-          await Promise.all(serversToRestart.map((name) => sdk.client.mcp.disconnect({ name })))
-          // Reconnect all servers
-          await Promise.all(serversToRestart.map((name) => sdk.client.mcp.connect({ name })))
-          // Refresh status
-          const status = await sdk.client.mcp.status()
-          if (status.data) {
-            sync.set("mcp", status.data)
-            toast.show({
-              message: "MCP servers restarted",
-              variant: "success",
-            })
-          }
-        } catch (error) {
-          toast.show({
-            message: "Failed to restart MCP servers",
-            variant: "error",
-          })
-        }
       },
     },
     {

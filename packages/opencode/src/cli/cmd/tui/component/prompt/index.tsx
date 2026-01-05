@@ -20,15 +20,15 @@ import { Editor } from "@tui/util/editor"
 import { useExit } from "../../context/exit"
 import { Clipboard } from "../../util/clipboard"
 import type { FilePart } from "@opencode-ai/sdk/v2"
-import { useToast } from "../../ui/toast"
-import { useKV } from "../../context/kv"
-import { useDialog } from "../../ui/dialog"
-import { DialogProvider } from "../dialog-provider"
 import { TuiEvent } from "../../event"
 import { iife } from "@/util/iife"
-import { createFrames, createColors } from "../../ui/spinner"
 import { Locale } from "@/util/locale"
+import { createColors, createFrames } from "../../ui/spinner.ts"
+import { useDialog } from "@tui/ui/dialog"
+import { DialogProvider as DialogProviderConnect } from "../dialog-provider"
 import { DialogAlert } from "../../ui/dialog-alert"
+import { useToast } from "../../ui/toast"
+import { useKV } from "../../context/kv"
 import { useTextareaKeybindings } from "../textarea-keybindings"
 
 export type PromptProps = {
@@ -39,12 +39,10 @@ export type PromptProps = {
   ref?: (ref: PromptRef) => void
   hint?: JSX.Element
   showPlaceholder?: boolean
-  initialValue?: string
 }
 
 export type PromptRef = {
   focused: boolean
-  text: string
   current: PromptInfo
   set(prompt: PromptInfo): void
   reset(): void
@@ -82,7 +80,7 @@ export function Prompt(props: PromptProps) {
       duration: 3000,
     })
     if (sync.data.provider.length === 0) {
-      dialog.replace(() => <DialogProvider />)
+      dialog.replace(() => <DialogProviderConnect />)
     }
   }
 
@@ -319,10 +317,6 @@ export function Prompt(props: PromptProps) {
 
   onMount(() => {
     promptPartTypeId = input.extmarks.registerType("prompt-part")
-    if (props.initialValue) {
-      input.setText(props.initialValue)
-      setStore("prompt", "input", props.initialValue)
-    }
   })
 
   function restoreExtmarksFromParts(parts: PromptInfo["parts"]) {
@@ -446,7 +440,7 @@ export function Prompt(props: PromptProps) {
       onSelect: (dialog) => {
         dialog.replace(() => (
           <DialogStash
-            onSelect={(entry: any) => {
+            onSelect={(entry) => {
               input.setText(entry.input)
               setStore("prompt", { input: entry.input, parts: entry.parts })
               restoreExtmarksFromParts(entry.parts)
@@ -461,9 +455,6 @@ export function Prompt(props: PromptProps) {
   props.ref?.({
     get focused() {
       return input.focused
-    },
-    get text() {
-      return input.plainText
     },
     get current() {
       return store.prompt
@@ -613,21 +604,6 @@ export function Prompt(props: PromptProps) {
     input.clear()
   }
   const exit = useExit()
-  let lastExitAttempt = 0
-
-  async function tryExit() {
-    const now = Date.now()
-    if (now - lastExitAttempt < 2000) {
-      await exit()
-      return
-    }
-    lastExitAttempt = now
-    toast.show({
-      variant: "warning",
-      message: "Press again to exit",
-      duration: 2000,
-    })
-  }
 
   function pasteText(text: string, virtualText: string) {
     const currentOffset = input.visualCursor.offset
@@ -773,7 +749,7 @@ export function Prompt(props: PromptProps) {
         >
           <box
             paddingLeft={2}
-            paddingRight={1}
+            paddingRight={2}
             paddingTop={1}
             flexShrink={0}
             backgroundColor={theme.backgroundElement}
@@ -825,8 +801,12 @@ export function Prompt(props: PromptProps) {
                   return
                 }
                 if (keybind.match("app_exit", e)) {
-                  await tryExit()
-                  return
+                  if (store.prompt.input === "") {
+                    await exit()
+                    // Don't preventDefault - let textarea potentially handle the event
+                    e.preventDefault()
+                    return
+                  }
                 }
                 if (e.name === "!" && input.visualCursor.offset === 0) {
                   setStore("mode", "shell")

@@ -49,7 +49,6 @@ export namespace SessionProcessor {
           try {
             let currentText: MessageV2.TextPart | undefined
             let reasoningMap: Record<string, MessageV2.ReasoningPart> = {}
-            let stepStartTime = Date.now()
             const stream = await LLM.stream(streamInput)
 
             for await (const value of stream.fullStream) {
@@ -220,7 +219,6 @@ export namespace SessionProcessor {
                   throw value.error
 
                 case "start-step":
-                  stepStartTime = Date.now()
                   snapshot = await Snapshot.track()
                   await Session.updatePart({
                     id: Identifier.ascending("part"),
@@ -237,11 +235,9 @@ export namespace SessionProcessor {
                     usage: value.usage,
                     metadata: value.providerMetadata,
                   })
-                  const stepDuration = (Date.now() - stepStartTime) / 1000
-                  const tps = stepDuration > 0 ? Math.round(usage.tokens.output / stepDuration) : 0
                   input.assistantMessage.finish = value.finishReason
                   input.assistantMessage.cost += usage.cost
-                  input.assistantMessage.tokens = { ...usage.tokens, tps }
+                  input.assistantMessage.tokens = usage.tokens
                   await Session.updatePart({
                     id: Identifier.ascending("part"),
                     reason: value.finishReason,
@@ -251,7 +247,6 @@ export namespace SessionProcessor {
                     type: "step-finish",
                     tokens: usage.tokens,
                     cost: usage.cost,
-                    tps,
                   })
                   await Session.updateMessage(input.assistantMessage)
                   if (snapshot) {
@@ -317,7 +312,7 @@ export namespace SessionProcessor {
                     )
                     currentText.text = textOutput.text
                     currentText.time = {
-                      start: currentText.time?.start ?? Date.now(), // No need to set start time here, it's already set in the text-start event
+                      start: Date.now(),
                       end: Date.now(),
                     }
                     if (value.providerMetadata) currentText.metadata = value.providerMetadata

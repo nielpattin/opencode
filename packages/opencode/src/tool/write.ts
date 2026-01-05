@@ -21,9 +21,7 @@ export const WriteTool = Tool.define("write", {
     filePath: z.string().describe("The absolute path to the file to write (must be absolute, not relative)"),
   }),
   async execute(params, ctx) {
-    const filepath = Filesystem.toNativePath(
-      path.isAbsolute(params.filePath) ? params.filePath : path.join(Instance.directory, params.filePath),
-    )
+    const filepath = path.isAbsolute(params.filePath) ? params.filePath : path.join(Instance.directory, params.filePath)
     /* TODO
     if (!Filesystem.contains(Instance.directory, filepath)) {
       const parentDir = path.dirname(filepath)
