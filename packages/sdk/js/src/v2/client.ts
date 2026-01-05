@@ -25,7 +25,7 @@ export function createOpencodeClient(config?: Config & { directory?: string }) {
     }
   }
 
-  if (process.env.OPENCODE_CLIENT_TYPE === "tui") {
+  if (typeof process !== "undefined" && process.env?.OPENCODE_CLIENT_TYPE === "tui") {
     config.headers = {
       ...config.headers,
       "x-opencode-client": "tui",
