@@ -21,6 +21,7 @@ import type {
   EventTuiPromptAppend,
   EventTuiSessionSelect,
   EventTuiToastShow,
+  ExperimentalResourceListResponses,
   FileListResponses,
   FilePartInput,
   FileReadResponses,
@@ -774,10 +775,25 @@ export class Session extends HeyApiClient {
   public list<ThrowOnError extends boolean = false>(
     parameters?: {
       directory?: string
+      start?: number
+      search?: string
+      limit?: number
     },
     options?: Options<never, ThrowOnError>,
   ) {
-    const params = buildClientParams([parameters], [{ args: [{ in: "query", key: "directory" }] }])
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "directory" },
+            { in: "query", key: "start" },
+            { in: "query", key: "search" },
+            { in: "query", key: "limit" },
+          ],
+        },
+      ],
+    )
     return (options?.client ?? this.client).get<SessionListResponses, unknown, ThrowOnError>({
       url: "/session",
       ...options,
@@ -1707,6 +1723,7 @@ export class Permission extends HeyApiClient {
       requestID: string
       directory?: string
       reply?: "once" | "always" | "reject"
+      message?: string
     },
     options?: Options<never, ThrowOnError>,
   ) {
@@ -1718,6 +1735,7 @@ export class Permission extends HeyApiClient {
             { in: "path", key: "requestID" },
             { in: "query", key: "directory" },
             { in: "body", key: "reply" },
+            { in: "body", key: "message" },
           ],
         },
       ],
@@ -2430,6 +2448,31 @@ export class Mcp extends HeyApiClient {
   auth = new Auth({ client: this.client })
 }
 
+export class Resource extends HeyApiClient {
+  /**
+   * Get MCP resources
+   *
+   * Get all available MCP resources from connected servers. Optionally filter by name.
+   */
+  public list<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "query", key: "directory" }] }])
+    return (options?.client ?? this.client).get<ExperimentalResourceListResponses, unknown, ThrowOnError>({
+      url: "/experimental/resource",
+      ...options,
+      ...params,
+    })
+  }
+}
+
+export class Experimental extends HeyApiClient {
+  resource = new Resource({ client: this.client })
+}
+
 export class Lsp extends HeyApiClient {
   /**
    * Get LSP status
@@ -2892,6 +2935,8 @@ export class OpencodeClient extends HeyApiClient {
   app = new App({ client: this.client })
 
   mcp = new Mcp({ client: this.client })
+
+  experimental = new Experimental({ client: this.client })
 
   lsp = new Lsp({ client: this.client })
 
