@@ -1,0 +1,6 @@
+version: "1"
+rules:
+  - base: dev
+    upstream: anomalyco/opencode:dev
+    mergeMethod: hardreset
+    mergeUnstable: true
